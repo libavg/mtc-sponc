@@ -73,9 +73,9 @@ class BoundaryLine(Line):
         return False
 
 class Batpoint(Point):
-    def __init__(self,bat,pos,size=50):
+    def __init__(self,player,pos,size=50):
         global cage
-        self.bat=bat
+        self.player=player
         self.node=g_Player.createNode(
         '<image width="%i" height="%i" href="%s" />' % (size,size,"finger.png"))
         self.size=size
@@ -92,12 +92,12 @@ class Batpoint(Point):
         pos.y-=cage.y
         self.goto(pos)
     def inCage(self,pos):
-        return self.bat.player.cage.inbound(pos)
+        return self.player.cage.inbound(pos)
     def getOther(self): # XXX
-        if(self.bat.ends[0]==self):
-            other=self.bat.ends[1]
+        if(self.player.ends[0]==self):
+            other=self.player.ends[1]
         else:
-            other=self.bat.ends[0]
+            other=self.player.ends[0]
         return other
     def getNewPos(self,pos):
         p=self.inCage(pos)
@@ -112,7 +112,7 @@ class Batpoint(Point):
         batpoint"""
         new=self.getNewPos(pos)
     
-        if self.bat.isHard():
+        if self.player.batline.isHard():
             self.moveBounce(new)
 
         (self.x,self.y)=(new.x,new.y)
@@ -221,33 +221,23 @@ class RipBatLine(BatLine):
     def getWidth(self):
         return (self.maxLength-self.getLength())/10
 
-class Bat(Line):
-    def __init__(self,player,game):
-        self.player=player
-        pcage=self.player.cage
-        xpos=pcage.x+pcage.width/2
-        self.game = game
-        self.addBatpoints(Point(xpos,pcage.height*1/3),Point(xpos,pcage.height*2/3))
-        self.batline=RipBatLine("bat.png",self.ends,maxBatLength,game)
-
-    def genBatpoint(self,pos):
-        return Batpoint(self,pos)
-
-    def addBatpoints(self,pos1,pos2):
-        self.ends=(
-                self.genBatpoint(pos1),
-                self.genBatpoint(pos2)
-                )
-        for end in self.ends:
-            self.game.addTouchActive(end)
-
 class Player:
     def __init__(self,cage,batType, game):
         self.cage=cage
         self.score=0
         self.game=game
-        # XXX magic numbers
-        self.bat=Bat(self,game)
+        
+        xpos=cage.x+cage.width/2
+        self.addBatpoints(Point(xpos,cage.height*1/3),Point(xpos,cage.height*2/3))
+        self.batline=RipBatLine("bat.png",self.ends,maxBatLength,game)
+
+    def addBatpoints(self,pos1,pos2):
+        self.ends=(
+                Batpoint(self, pos1),
+                Batpoint(self, pos2)
+                )
+        for end in self.ends:
+            self.game.addTouchActive(end)
 
     def lose(self):
         global numRound
@@ -389,8 +379,7 @@ def winkelabstand(a,b):
 
 class Game:
     def __init__(self):
-        global cage,scorenode,XXXgame
-        XXXgame=self
+        global cage,scorenode
         cage=g_Player.getElementByID("cage")
         self.node=cage
         seed()
