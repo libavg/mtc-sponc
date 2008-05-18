@@ -84,9 +84,16 @@ class Batpoint(Point):
 
         self.dependants=[]
         self.lines=[]
-        player.game.addTouchActive(self)
-    def onMouse(self,pos):
+        self.__cursorID = None
+    def onCursorDown(self, event, pos):
+        self.__cursorID = event.cursorid
         self.goto(pos)
+    def onCursorMove(self, pos):
+        self.goto(pos)
+    def onCursorUp(self):
+        self.__cursorID = None
+    def getCursorID(self):
+        return self.__cursorID
     def inCage(self,pos):
         return self.player.cage.inbound(pos)
     def getOther(self): # XXX
@@ -217,15 +224,55 @@ class Player:
         xpos=cage.x+cage.width/2
         self.addBatpoints(Point(xpos,cage.height*1/3),Point(xpos,cage.height*2/3))
         self.batline=BatLine("bat.png",self.ends,game)
-
     def addBatpoints(self,pos1,pos2):
         self.ends=(
                 Batpoint(self, pos1),
                 Batpoint(self, pos2)
                 )
-
     def lose(self):
         self.game.adjust_score(self)
+    def adjustCursorPos(self, event):
+        if event.source == avg.TRACK:
+            if event.x > 640:
+                if event.majoraxis[0]>0:
+                    y = event.y+event.majoraxis[1]*4
+                else:
+                    y = event.y-event.majoraxis[1]*4
+                x = event.x-abs(event.majoraxis[0]*4)
+            else:
+                if event.majoraxis[0]>0:
+                    y = event.y-event.majoraxis[1]*4
+                else:
+                    y = event.y+event.majoraxis[1]*4
+                x = event.x+abs(event.majoraxis[0]*4)
+            return Point(x,y)
+        else:
+            return Point(event.x, event.y)
+    def onCursorEvent(self, event):
+        pos = self.adjustCursorPos(event)
+        if self.cage.contains(pos):
+            if event.type == avg.CURSORDOWN:
+                self.onCursorDown(event, pos)
+            elif event.type == avg.CURSORMOTION:
+                self.onCursorMotion(event, pos)
+            elif event.type == avg.CURSORUP:
+                self.onCursorUp(event, pos)
+    def onCursorDown(self, event, pos):
+        mindist = 10000
+        for batpoint in self.ends:
+            dist=math.sqrt((pos.x-batpoint.x)**2+(pos.y-batpoint.y)**2)
+            if batpoint.getCursorID() == None and dist<mindist:
+                mindist=dist
+                curBatpoint=batpoint
+        curBatpoint.onCursorDown(event, pos)
+    def onCursorMotion(self, event, pos):
+        for batpoint in self.ends:
+            if batpoint.getCursorID() == event.cursorid:
+                batpoint.onCursorMove(pos)
+    def onCursorUp(self, event, pos):
+        for batpoint in self.ends:
+            if batpoint.getCursorID() == event.cursorid:
+                batpoint.onCursorUp()
 
 class Ball(Point):
     def __init__(self,posx,posy,game):
@@ -261,10 +308,12 @@ class Ball(Point):
 
     def goto(self,x,y):
         if(x<-100 or x>self.game.node.width+100):
-            print "BUG! ball out of horizontal bounds: %s, next %s, old next %s speed %f!" % (self,Point(x,y),Point(self.nextx,self.nexty),self.speed)
+            print ("BUG! ball out of horizontal bounds: %s, next %s, old next %s speed %f!" 
+                    % (self,Point(x,y),Point(self.nextx,self.nexty),self.speed))
             sys.exit()
         if(y<-100 or y>self.game.node.height+100):
-            print "BUG! ball out of vertical bounds: %s, next %s, old next %s speed %f!" % (self,Point(x,y),Point(self.nextx,self.nexty),self.speed)
+            print ("BUG! ball out of vertical bounds: %s, next %s, old next %s speed %f!" 
+                    % (self,Point(x,y),Point(self.nextx,self.nexty),self.speed))
             sys.exit()
         self.x=x
         self.y=y
@@ -354,7 +403,6 @@ class Game:
         self.__surfaces=[]
 
     def enter(self):
-        self.__touchactive=[]
         self.__toUpdate=[]
         batType=0
 
@@ -397,7 +445,12 @@ class Game:
         self.ball = Ball(w/2,h/2,self)
         self.__toUpdate.append(self.ball)
         g_Player.setOnFrameHandler(self.onFrame)
-        self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorMove)
+        self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorEvent)
+        self.node.setEventHandler(avg.CURSORMOTION, avg.TRACK, self.onCursorEvent)
+        self.node.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onCursorEvent)
+        self.node.setEventHandler(avg.CURSORDOWN, avg.TRACK, self.onCursorEvent)
+        self.node.setEventHandler(avg.CURSORUP, avg.MOUSE, self.onCursorEvent)
+        self.node.setEventHandler(avg.CURSORUP, avg.TRACK, self.onCursorEvent)
 
     def leave(self):
         anim.fadeOut(self.node,800)
@@ -416,36 +469,12 @@ class Game:
         for p in self.__players:
             if p.score >=MAX_SCORE:
                 self.stop()
-    def onCursorMove(self, event):
-        button=False
-        if event.source == avg.TRACK:
-            if event.x > 640:
-                if event.majoraxis[0]>0:
-                    y = event.y+event.majoraxis[1]*4
-                else:
-                    y = event.y-event.majoraxis[1]*4
-                x = event.x-abs(event.majoraxis[0]*4)
-            else:
-                if event.majoraxis[0]>0:
-                    y = event.y-event.majoraxis[1]*4
-                else:
-                    y = event.y+event.majoraxis[1]*4
-                x = event.x+abs(event.majoraxis[0]*4)
-            pos = Point(x,y)
-        else:
-            pos = Point(event.x, event.y)
-        for b in self.__touchactive:
-            # calculate distance to mouse event
-            #not real distance, but as we are looking for the smallest one we dont need to sqrt
-            dist=(pos.x-b.x)**2+(pos.y-b.y)**2
-            if(not button or dist<mindist):
-                mindist=dist
-                button=b
-        button.onMouse(pos)
+        
+    def onCursorEvent(self, event):
+        for player in self.__players:
+            player.onCursorEvent(event)
     def addNode(self, node):
         self.node.appendChild(node)
-    def addTouchActive(self, obj):
-        self.__touchactive.append(obj)
     
     def adjust_score(self, loser = None):
         if loser:
