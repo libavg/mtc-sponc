@@ -84,6 +84,7 @@ class Batpoint(Point):
 
         self.dependants=[]
         self.lines=[]
+        player.game.addTouchActive(self)
     def onMouse(self,pos):
         self.goto(pos)
     def inCage(self,pos):
@@ -230,16 +231,9 @@ class Player:
                 Batpoint(self, pos1),
                 Batpoint(self, pos2)
                 )
-        for end in self.ends:
-            self.game.addTouchActive(end)
 
     def lose(self):
         self.game.adjust_score(self)
-
-def onKeyUp(Event):
-    if Event.keystring == "t":
-#       CoordCalibrator(Tracker, Player)
-        pass
 
 class Ball(Point):
     def __init__(self,posx,posy,game):

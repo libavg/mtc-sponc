@@ -26,7 +26,6 @@ from libavg import anim
 
 import GUI
 import Game
-from Game import onKeyUp
 
 from config import *
 

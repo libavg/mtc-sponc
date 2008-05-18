@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE avg SYSTEM "../../libavg/doc/avg.dtd">
-<avg id="main" width="1280" height="800" onkeyup="onKeyUp"
-        mediadir="media">
+<avg id="main" width="1280" height="800" mediadir="media">
     <div id="cage" x="0" y="0" width="1280" height="800" active="1" opacity="0">
         <image width="1280" height="800" href="background_color.png" opacity="0.5"/>
         <image href="background_texture.png" opacity="0.1"/>
