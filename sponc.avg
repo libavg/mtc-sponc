@@ -7,6 +7,16 @@
         <image href="border.png" opacity="1"/>
         <image x="400" href="third_line.png" opacity="1"/>
         <image x="880" href="third_line.png" opacity="1"/>
+        <div id="score" x="0" y="180">
+            <words x="600" y="0" parawidth="80" alignment="center" text=":"
+                    font="DS-Digital" size="150" color="f0ead8"/>
+            <words id="leftplayerscore" x="545" y="0" parawidth="80" alignment="right" 
+                    text="00"
+                    font="DS-Digital" size="150" color="f0ead8"/>
+            <words id="rightplayerscore" x="655" y="0" parawidth="80" alignment="left"
+                    text="00"
+                    font="DS-Digital" size="150" color="f0ead8"/>
+        </div>
     </div>
     <image id="fingers" x="0" y="0" width="1280" height="800" angle="3.14159" sensitive="false"/>
 </avg>

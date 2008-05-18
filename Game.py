@@ -264,7 +264,7 @@ class Ball(Point):
 
         self.numHit = 0
         self.calcSpeed()
-        self.sleeptime=25
+        self.sleepStartTime=g_Player.getFrameTime()
         self.node.opacity=0
         self.goto(self.startx,self.starty)
         anim.fadeIn(self.node,1500,1.0)
@@ -293,8 +293,7 @@ class Ball(Point):
         self.nexty=self.y+(math.sin(self.direction)*self.speed)
 
     def update(self):
-        if self.sleeptime:
-            self.sleeptime-=1
+        if g_Player.getFrameTime()-self.sleepStartTime < TIME_BETWEEN_BALLS:
             return
         
         #check if the ball collides with bats
@@ -380,9 +379,6 @@ class Game:
                 batType,self)
         self.__players = [playerleft, playerright] 
     
-        self.score=GUI.Label(self,playerWidth,0,w-2*playerWidth,
-                h,"DUMMY",True,100,"Checkbook")
-        self.score.setColor("FF0000")
         self.adjust_score()
 
         topline=Line(
@@ -468,7 +464,11 @@ class Game:
             for p in self.__players:
                 if p != loser:
                     p.score+=1
-        self.score.setText("%i:%i" % (self.__players[0].score, self.__players[1].score))
+        g_Player.getElementByID("leftplayerscore").text = str(self.__players[0].score)
+        g_Player.getElementByID("rightplayerscore").text = str(self.__players[1].score)
+        scoreDisplay=g_Player.getElementByID("score")
+        anim.LinearAnim(scoreDisplay, "opacity", 400, 1, 0.3, False,
+            lambda: anim.LinearAnim(scoreDisplay, "opacity", 400, 0.3, 1))
 
 def init(Player):
     global g_Player
