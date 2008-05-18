@@ -35,7 +35,6 @@ MAX_SCORE=25
 #GLOBAL LISTS
 toUpdate=[]
 toAnimate=[]
-players=[]
 
 class Clash(Point):
     """clash explosion"""
@@ -272,10 +271,7 @@ class Player:
     def lose(self):
         global numRound
         numRound += 1;
-        for p in players:
-            if(p!=self):
-                p.score+=1
-        XXXgame.adjust_score()
+        self.game.adjust_score(self)
 
 def onKeyUp(Event):
     if Event.keystring == "t":
@@ -438,8 +434,7 @@ class Game:
         playerleft=Player(Box(0,0,playerWidth,cage.height),batType,self)
         playerright=Player(Box(cage.width-playerWidth,0,playerWidth,cage.height),
                 batType,self)
-        for p in (playerleft, playerright):
-            players.append(p)
+        self.__players = [playerleft, playerright] 
     
         self.score=GUI.Label(self,playerWidth,0,cage.width-2*playerWidth,
                 cage.height,"DUMMY",True,100,"Checkbook")
@@ -476,9 +471,8 @@ class Game:
         self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorMove)
 
     def leave(self):
-        global players
         anim.fadeOut(cage,800)
-        players = []
+        self.__players = []
         self.ball.stop()
         self.__surfaces = []
         self.score.stop()
@@ -488,7 +482,7 @@ class Game:
     def addSurface(self, surface):
         self.__surfaces.append(surface)
     def onFrame(self):
-        for p in players:
+        for p in self.__players:
             if p.score >=MAX_SCORE:
                 self.stop()
     def onCursorMove(self, event):
@@ -520,8 +514,12 @@ class Game:
     def addTouchActive(self, obj):
         self.__touchactive.append(obj)
     
-    def adjust_score(self):
-        self.score.setText("%i:%i" % (players[0].score,players[1].score))
+    def adjust_score(self, loser = None):
+        if loser:
+            for p in self.__players:
+                if p != loser:
+                    p.score+=1
+        self.score.setText("%i:%i" % (self.__players[0].score, self.__players[1].score))
 
 def init(Player):
     global g_Player
