@@ -153,7 +153,7 @@ class BatLine(Line):
 
         width=self.getWidth()
 
-        self.node.width=boundary(width,minBatWidth,maxBatWidth)
+        self.node.width=width
 
         if self.isHard():
             self.node.opacity=1
@@ -166,14 +166,15 @@ class BatLine(Line):
         self.node.angle=self.getNormal()
 
     def getWidth(self):
-        return 10
-        
+        return (maxBatLength-self.getLength())/10.0
+
     def isHard(self):
-        return True
+        return self.getLength()<=maxBatLength
     
     def onClash(self,object,position):
         if self.isHard():
             Clash(self.game, position)
+            object.hitSpeedup(self.getLength()/maxBatLength)
         Line.onClash(self,object,position)
         return False
     def moveBounce(self,end,new):
@@ -204,17 +205,8 @@ class BatLine(Line):
             if(newpos): #XXX
                 ball.goto(newpos.x,newpos.y)
             Clash(self.game, ball)
-            ball.hitSpeedup()
+            ball.hitSpeedup(self.getLength()/(maxBatLength*2))
             ball.update()
-
-class RipBatLine(BatLine):
-    def __init__(self,gfxhref,ends,maxLen, game):
-        self.maxLength=maxLen
-        BatLine.__init__(self,gfxhref,ends, game)
-    def isHard(self):
-        return self.getLength()<=self.maxLength
-    def getWidth(self):
-        return (self.maxLength-self.getLength())/10
 
 class Player:
     def __init__(self,cage,batType, game):
@@ -224,7 +216,7 @@ class Player:
         
         xpos=cage.x+cage.width/2
         self.addBatpoints(Point(xpos,cage.height*1/3),Point(xpos,cage.height*2/3))
-        self.batline=RipBatLine("bat.png",self.ends,maxBatLength,game)
+        self.batline=BatLine("bat.png",self.ends,game)
 
     def addBatpoints(self,pos1,pos2):
         self.ends=(
@@ -262,8 +254,7 @@ class Ball(Point):
         if(random()>0.5): # 50% -> shoot left
             self.direction+=math.pi
 
-        self.numHit = 0
-        self.calcSpeed()
+        self.speed = baseSpeed
         self.sleepStartTime=g_Player.getFrameTime()
         self.node.opacity=0
         self.goto(self.startx,self.starty)
@@ -337,13 +328,11 @@ class Ball(Point):
         ausfall=normale+einfall
         self.direction=ausfall;
 
-        self.hitSpeedup()
-
-    def hitSpeedup(self):
-        self.numHit +=1
-        self.calcSpeed()
-    def calcSpeed(self):
-        self.speed=(self.numHit*hitSpeedup)+baseSpeed
+    def hitSpeedup(self, factor):
+        hitSpeed = 3/factor
+        if hitSpeed > 20:
+            hitSpeed = 20
+        self.speed=hitSpeed+baseSpeed
 
 def sgn(x):
     if x < 0: return -1
