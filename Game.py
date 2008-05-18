@@ -28,8 +28,6 @@ from random import random, seed
 import GUI
 import sys
 
-numRound=0
-
 MAX_SCORE=25
 
 #GLOBAL LISTS
@@ -236,8 +234,6 @@ class Player:
             self.game.addTouchActive(end)
 
     def lose(self):
-        global numRound
-        numRound += 1;
         self.game.adjust_score(self)
 
 def onKeyUp(Event):
@@ -280,7 +276,6 @@ class Ball(Point):
         anim.fadeIn(self.node,1500,1.0)
 
     def goto(self,x,y):
-        global numRound
         if(x<-100 or x>self.game.node.width+100):
             print "BUG! ball out of horizontal bounds: %s, next %s, old next %s speed %f!" % (self,Point(x,y),Point(self.nextx,self.nexty),self.speed)
             sys.exit()
@@ -304,8 +299,6 @@ class Ball(Point):
         self.nexty=self.y+(math.sin(self.direction)*self.speed)
 
     def update(self):
-        global numRound
-
         if self.sleeptime:
             self.sleeptime-=1
             return
@@ -375,7 +368,6 @@ def winkelabstand(a,b):
 
 class Game:
     def __init__(self):
-        global scorenode
         self.node=g_Player.getElementByID("cage")
         seed()
         self.__surfaces=[]
