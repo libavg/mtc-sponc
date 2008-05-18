@@ -34,7 +34,6 @@ MAX_SCORE=25
 
 #GLOBAL LISTS
 toUpdate=[]
-toAnimate=[]
 
 class Clash(Point):
     """clash explosion"""
@@ -44,9 +43,9 @@ class Clash(Point):
         cage.appendChild(self.node)
         (self.x,self.y)=(p.x,p.y)
         self.step=0
-        
+
+        self.handler = g_Player.setOnFrameHandler(self.animate)
         self.animate()
-        toAnimate.append(self)
 
     def animate(self):
         self.node.width=80*math.log(self.step*10+2)
@@ -57,7 +56,7 @@ class Clash(Point):
         if(self.step>3):
             self.stop()
     def stop(self):
-        toAnimate.remove(self)
+        g_Player.clearInterval(self.handler)
         delNode(self.node)
 
 class BoundaryLine(Line):
@@ -410,8 +409,6 @@ def winkelabstand(a,b):
 def onFrame():
     for x in toUpdate:
         x.update()
-    for x in toAnimate:
-        x.animate()
     XXXgame.onFrame()
 
 class Game:
