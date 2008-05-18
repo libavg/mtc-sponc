@@ -2,14 +2,8 @@
 
 import math
 
-minBatWidth=1
-maxBatWidth=50
-maxBatLength=350
-fixBatLength=300
-fingerRotSpeed=-math.pi
-baseSpeed=10
-hitSpeedup=1
+MAX_BAT_LENGTH=350
+FINGER_ROT_SPEED=-math.pi
 
+BASE_BALL_SPEED=10
 TIME_BETWEEN_BALLS=800
-
-(screenX,screenY)=(1280,800)

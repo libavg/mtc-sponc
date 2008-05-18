@@ -78,7 +78,7 @@ class Batpoint(Point):
         self.size=size
         self.x=pos.x
         self.y=pos.y
-        self.anim=anim.ContinuousAnim(self.node,"angle",0,fingerRotSpeed,False)
+        self.anim=anim.ContinuousAnim(self.node,"angle",0,FINGER_ROT_SPEED,False)
         player.game.addNode(self.node)
         self.updateNode()
 
@@ -166,15 +166,15 @@ class BatLine(Line):
         self.node.angle=self.getNormal()
 
     def getWidth(self):
-        return (maxBatLength-self.getLength())/10.0
+        return (MAX_BAT_LENGTH-self.getLength())/10.0
 
     def isHard(self):
-        return self.getLength()<=maxBatLength
+        return self.getLength()<=MAX_BAT_LENGTH
     
     def onClash(self,object,position):
         if self.isHard():
             Clash(self.game, position)
-            object.hitSpeedup(self.getLength()/maxBatLength)
+            object.hitSpeedup(self.getLength()/MAX_BAT_LENGTH)
         Line.onClash(self,object,position)
         return False
     def moveBounce(self,end,new):
@@ -205,7 +205,7 @@ class BatLine(Line):
             if(newpos): #XXX
                 ball.goto(newpos.x,newpos.y)
             Clash(self.game, ball)
-            ball.hitSpeedup(self.getLength()/(maxBatLength*2))
+            ball.hitSpeedup(self.getLength()/(MAX_BAT_LENGTH*2))
             ball.update()
 
 class Player:
@@ -235,7 +235,6 @@ class Ball(Point):
 
         self.node=self.createNode(game,posx,posy)
         self.reset()
-        self.speed = baseSpeed
 
     def createNode(self,game,x,y):
         global g_Player
@@ -254,7 +253,7 @@ class Ball(Point):
         if(random()>0.5): # 50% -> shoot left
             self.direction+=math.pi
 
-        self.speed = baseSpeed
+        self.speed = BASE_BALL_SPEED
         self.sleepStartTime=g_Player.getFrameTime()
         self.node.opacity=0
         self.goto(self.startx,self.starty)
@@ -332,7 +331,7 @@ class Ball(Point):
         hitSpeed = 3/factor
         if hitSpeed > 20:
             hitSpeed = 20
-        self.speed=hitSpeed+baseSpeed
+        self.speed=hitSpeed+BASE_BALL_SPEED
 
 def sgn(x):
     if x < 0: return -1
