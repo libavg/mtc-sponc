@@ -33,7 +33,6 @@ numRound=0
 MAX_SCORE=25
 
 #GLOBAL LISTS
-toUpdate=[]
 
 class Clash(Point):
     """clash explosion"""
@@ -285,7 +284,6 @@ class Ball(Point):
         self.node=self.createNode(posx,posy)
         self.reset()
         self.speed = baseSpeed
-        toUpdate.append(self)
         self.game = game
 
     def createNode(self,x,y):
@@ -406,11 +404,6 @@ def winkelabstand(a,b):
     d*=sgn(a-b)
     return d
 
-def onFrame():
-    for x in toUpdate:
-        x.update()
-    XXXgame.onFrame()
-
 class Game:
     def __init__(self):
         global cage,scorenode,XXXgame
@@ -424,6 +417,7 @@ class Game:
         global cage
         
         self.__touchactive=[]
+        self.__toUpdate=[]
         batType=0
 
         playerWidth=cage.width*(400.0/1260)
@@ -464,7 +458,8 @@ class Game:
 
         anim.fadeIn(cage,800,1.0)
         self.ball = Ball(cage.width/2,cage.height/2,self)
-        g_Player.setOnFrameHandler(onFrame)
+        self.__toUpdate.append(self.ball)
+        g_Player.setOnFrameHandler(self.onFrame)
         self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorMove)
 
     def leave(self):
@@ -479,6 +474,8 @@ class Game:
     def addSurface(self, surface):
         self.__surfaces.append(surface)
     def onFrame(self):
+        for x in self.__toUpdate:
+            x.update()
         for p in self.__players:
             if p.score >=MAX_SCORE:
                 self.stop()
