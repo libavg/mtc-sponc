@@ -36,10 +36,10 @@ MAX_SCORE=25
 
 class Clash(Point):
     """clash explosion"""
-    def __init__(self,p):
+    def __init__(self,game,p):
         self.node=g_Player.createNode(
                 '<image href="clash.png" />')
-        cage.appendChild(self.node)
+        game.addNode(self.node)
         (self.x,self.y)=(p.x,p.y)
         self.step=0
 
@@ -74,7 +74,6 @@ class BoundaryLine(Line):
 
 class Batpoint(Point):
     def __init__(self,player,pos,size=50):
-        global cage
         self.player=player
         self.node=g_Player.createNode(
         '<image width="%i" height="%i" href="%s" />' % (size,size,"finger.png"))
@@ -82,14 +81,12 @@ class Batpoint(Point):
         self.x=pos.x
         self.y=pos.y
         self.anim=anim.ContinuousAnim(self.node,"angle",0,fingerRotSpeed,False)
-        cage.appendChild(self.node)
+        player.game.addNode(self.node)
         self.updateNode()
 
         self.dependants=[]
         self.lines=[]
     def onMouse(self,pos):
-        pos.x-=cage.x
-        pos.y-=cage.y
         self.goto(pos)
     def inCage(self,pos):
         return self.player.cage.inbound(pos)
@@ -135,14 +132,13 @@ class Batpoint(Point):
 
 class BatLine(Line):
     def __init__(self,gfxhref,ends,game):
-        global cage
         self.ends=ends
         for end in ends:
             end.addDependant(self)
             end.addLine(self)
         self.node=g_Player.createNode('<image href="%s"/>' % gfxhref)
         self.updateNode()
-        cage.appendChild(self.node)
+        game.addNode(self.node)
         game.addSurface(self)
         self.game = game
 
@@ -178,7 +174,7 @@ class BatLine(Line):
     
     def onClash(self,object,position):
         if self.isHard():
-            Clash(position)
+            Clash(self.game, position)
         Line.onClash(self,object,position)
         return False
     def moveBounce(self,end,new):
@@ -208,7 +204,7 @@ class BatLine(Line):
 #               print "%s and %s collide at %s" % (newbat,moveline,newpos)
             if(newpos): #XXX
                 ball.goto(newpos.x,newpos.y)
-            Clash(ball)
+            Clash(self.game, ball)
             ball.hitSpeedup()
             ball.update()
 
@@ -253,20 +249,20 @@ class Ball(Point):
     def __init__(self,posx,posy,game):
         self.startx=posx
         self.starty=posy
-
-        self.node=self.createNode(posx,posy)
-        self.reset()
-        self.speed = baseSpeed
         self.game = game
 
-    def createNode(self,x,y):
-        global cage,g_Player
+        self.node=self.createNode(game,posx,posy)
+        self.reset()
+        self.speed = baseSpeed
+
+    def createNode(self,game,x,y):
+        global g_Player
 
         balldiv=g_Player.createNode('<div x="%i" y="%i"></div>' % (x,y))
         img = g_Player.createNode('image', {"href":"ball.png"})
         balldiv.appendChild(img)
         self.radius = img.width/2.0
-        cage.appendChild(balldiv)
+        game.addNode(balldiv)
         return balldiv
     def stop(self):
         delNode(self.node)
@@ -285,10 +281,10 @@ class Ball(Point):
 
     def goto(self,x,y):
         global numRound
-        if(x<-100 or x>cage.width+100):
+        if(x<-100 or x>self.game.node.width+100):
             print "BUG! ball out of horizontal bounds: %s, next %s, old next %s speed %f!" % (self,Point(x,y),Point(self.nextx,self.nexty),self.speed)
             sys.exit()
-        if(y<-100 or y>cage.height+100):
+        if(y<-100 or y>self.game.node.height+100):
             print "BUG! ball out of vertical bounds: %s, next %s, old next %s speed %f!" % (self,Point(x,y),Point(self.nextx,self.nexty),self.speed)
             sys.exit()
         self.x=x
@@ -379,63 +375,62 @@ def winkelabstand(a,b):
 
 class Game:
     def __init__(self):
-        global cage,scorenode
-        cage=g_Player.getElementByID("cage")
-        self.node=cage
+        global scorenode
+        self.node=g_Player.getElementByID("cage")
         seed()
         self.__surfaces=[]
 
     def enter(self):
-        global cage
-        
         self.__touchactive=[]
         self.__toUpdate=[]
         batType=0
 
-        playerWidth=cage.width*(400.0/1260)
+        w = self.node.width
+        h = self.node.height
+        playerWidth=w*(400.0/1260)
 
-        playerleft=Player(Box(0,0,playerWidth,cage.height),batType,self)
-        playerright=Player(Box(cage.width-playerWidth,0,playerWidth,cage.height),
+        playerleft=Player(Box(0,0,playerWidth,h),batType,self)
+        playerright=Player(Box(w-playerWidth,0,playerWidth,h),
                 batType,self)
         self.__players = [playerleft, playerright] 
     
-        self.score=GUI.Label(self,playerWidth,0,cage.width-2*playerWidth,
-                cage.height,"DUMMY",True,100,"Checkbook")
+        self.score=GUI.Label(self,playerWidth,0,w-2*playerWidth,
+                h,"DUMMY",True,100,"Checkbook")
         self.score.setColor("FF0000")
         self.adjust_score()
 
         topline=Line(
                 Point(-10,0),
-                Point(cage.width+10,0)
+                Point(w+10,0)
                 )
         self.__surfaces.append(topline)
         bottomline=Line(
-                Point(-10,cage.height),
-                Point(cage.width+10,cage.height)
+                Point(-10,h),
+                Point(w+10,h)
                 )
         self.__surfaces.append(bottomline)
 
         leftbound=BoundaryLine(
                 Point(0,-10),
-                Point(0,cage.height+10),
+                Point(0,h+10),
                 playerleft
                 )
         self.__surfaces.append(leftbound)
         rightbound=BoundaryLine(
-                Point(cage.width,-10),
-                Point(cage.width,cage.height+10),
+                Point(w,-10),
+                Point(w,h+10),
                 playerright
                 )
         self.__surfaces.append(rightbound)
 
-        anim.fadeIn(cage,800,1.0)
-        self.ball = Ball(cage.width/2,cage.height/2,self)
+        anim.fadeIn(self.node,800,1.0)
+        self.ball = Ball(w/2,h/2,self)
         self.__toUpdate.append(self.ball)
         g_Player.setOnFrameHandler(self.onFrame)
         self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorMove)
 
     def leave(self):
-        anim.fadeOut(cage,800)
+        anim.fadeOut(self.node,800)
         self.__players = []
         self.ball.stop()
         self.__surfaces = []
@@ -476,7 +471,9 @@ class Game:
             if(not button or dist<mindist):
                 mindist=dist
                 button=b
-        button.onMouse(pos);
+        button.onMouse(pos)
+    def addNode(self, node):
+        self.node.appendChild(node)
     def addTouchActive(self, obj):
         self.__touchactive.append(obj)
     
@@ -490,5 +487,3 @@ class Game:
 def init(Player):
     global g_Player
     g_Player = Player
-
-
