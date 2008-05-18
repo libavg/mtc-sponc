@@ -133,23 +133,6 @@ class Batpoint(Point):
         self.node.x=self.x-self.size/2
         self.node.y=self.y-self.size/2
 
-class FixBatpoint(Batpoint):
-    def getNewPos(self,pos):
-        global fixBatLength
-        new=self.inCage(pos)
-        other=self.getOther()
-        l=Line(other,new)
-        len=l.getLength()
-        ratio=fixBatLength/len
-        deltax=l.ends[1].x-l.ends[0].x
-        deltay=l.ends[1].y-l.ends[0].y
-
-        newx=l.ends[0].x+ratio*deltax
-        newy=l.ends[0].y+ratio*deltay
-
-        return self.inCage(Point(newx,newy))
-
-
 class BatLine(Line):
     def __init__(self,gfxhref,ends,game):
         global cage
