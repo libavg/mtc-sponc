@@ -36,8 +36,6 @@ MAX_SCORE=25
 toUpdate=[]
 toAnimate=[]
 players=[]
-surfaces=[]
-touchactive=[]
 
 class Clash(Point):
     """clash explosion"""
@@ -79,7 +77,7 @@ class BoundaryLine(Line):
 
 class Batpoint(Point):
     def __init__(self,bat,pos,size=50):
-        global cage,touchactive
+        global cage
         self.bat=bat
         self.node=g_Player.createNode(
         '<image width="%i" height="%i" href="%s" />' % (size,size,"finger.png"))
@@ -165,7 +163,7 @@ class BatLine(Line):
         self.node=g_Player.createNode('<image href="%s"/>' % gfxhref)
         self.updateNode()
         cage.appendChild(self.node)
-        surfaces.append(self)
+        game.addSurface(self)
         self.game = game
 
     def onEndUpdate(self,xxx):
@@ -248,11 +246,9 @@ class Bat(Line):
         self.player=player
         pcage=self.player.cage
         xpos=pcage.x+pcage.width/2
+        self.game = game
         self.addBatpoints(Point(xpos,pcage.height*1/3),Point(xpos,pcage.height*2/3))
         self.batline=RipBatLine("bat.png",self.ends,maxBatLength,game)
-
-    def genBatline(self):
-        self.batline=BatLine("bat.png",self.ends)
 
     def genBatpoint(self,pos):
         return Batpoint(self,pos)
@@ -263,7 +259,7 @@ class Bat(Line):
                 self.genBatpoint(pos2)
                 )
         for end in self.ends:
-            touchactive.append(end)
+            self.game.addTouchActive(end)
 
 class Player:
     def __init__(self,cage,batType, game):
@@ -287,7 +283,7 @@ def onKeyUp(Event):
         pass
 
 class Ball(Point):
-    def __init__(self,posx,posy):
+    def __init__(self,posx,posy,game):
         self.startx=posx
         self.starty=posy
 
@@ -295,6 +291,7 @@ class Ball(Point):
         self.reset()
         self.speed = baseSpeed
         toUpdate.append(self)
+        self.game = game
 
     def createNode(self,x,y):
         global cage,g_Player
@@ -352,7 +349,7 @@ class Ball(Point):
             return
         
         #check if the ball collides with bats
-        for line in surfaces:
+        for line in self.game.getSurfaces():
             if self.trybounce(line):
 #               print "bouncing!"
                 return # a bounce might trigger a .reset(), we dont want to move
@@ -414,35 +411,6 @@ def winkelabstand(a,b):
     d*=sgn(a-b)
     return d
 
-def cageOnCursorMove(event):
-    if event.source == avg.TOUCH:
-        return
-    button=False
-    if event.source == avg.TRACK:
-        if event.x > 640:
-            if event.majoraxis[0]>0:
-                y = event.y+event.majoraxis[1]*4
-            else:
-                y = event.y-event.majoraxis[1]*4
-            x = event.x-abs(event.majoraxis[0]*4)
-        else:
-            if event.majoraxis[0]>0:
-                y = event.y-event.majoraxis[1]*4
-            else:
-                y = event.y+event.majoraxis[1]*4
-            x = event.x+abs(event.majoraxis[0]*4)
-        pos = Point(x,y)
-    else:
-        pos = Point(event.x, event.y)
-    for b in touchactive:
-        # calculate distance to mouse event
-        #not real distance, but as we are looking for the smallest one we dont need to sqrt
-        dist=(pos.x-b.x)**2+(pos.y-b.y)**2
-        if(not button or dist<mindist):
-            mindist=dist
-            button=b
-    button.onMouse(pos);
-
 def onFrame():
     for x in toUpdate:
         x.update()
@@ -457,10 +425,12 @@ class Game:
         cage=g_Player.getElementByID("cage")
         self.node=cage
         seed()
+        self.__surfaces=[]
 
     def enter(self):
         global cage
         
+        self.__touchactive=[]
         batType=0
 
         playerWidth=cage.width*(400.0/1260)
@@ -471,7 +441,8 @@ class Game:
         for p in (playerleft, playerright):
             players.append(p)
     
-        self.score=GUI.Label(self,playerWidth,0,cage.width-2*playerWidth,cage.height,"DUMMY",True,100,"Checkbook")
+        self.score=GUI.Label(self,playerWidth,0,cage.width-2*playerWidth,
+                cage.height,"DUMMY",True,100,"Checkbook")
         self.score.setColor("FF0000")
         self.adjust_score()
 
@@ -479,43 +450,76 @@ class Game:
                 Point(-10,0),
                 Point(cage.width+10,0)
                 )
-        surfaces.append(topline)
+        self.__surfaces.append(topline)
         bottomline=Line(
                 Point(-10,cage.height),
                 Point(cage.width+10,cage.height)
                 )
-        surfaces.append(bottomline)
+        self.__surfaces.append(bottomline)
 
         leftbound=BoundaryLine(
                 Point(0,-10),
                 Point(0,cage.height+10),
                 playerleft
                 )
-        surfaces.append(leftbound)
+        self.__surfaces.append(leftbound)
         rightbound=BoundaryLine(
                 Point(cage.width,-10),
                 Point(cage.width,cage.height+10),
                 playerright
                 )
-        surfaces.append(rightbound)
+        self.__surfaces.append(rightbound)
 
         anim.fadeIn(cage,800,1.0)
-        self.ball = Ball(cage.width/2,cage.height/2)
+        self.ball = Ball(cage.width/2,cage.height/2,self)
         g_Player.setOnFrameHandler(onFrame)
+        self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorMove)
+
     def leave(self):
         global players
-        global surfaces
         anim.fadeOut(cage,800)
         players = []
         self.ball.stop()
-        surfaces = []
+        self.__surfaces = []
         self.score.stop()
         g_Player.stop()
-        
+    def getSurfaces(self):
+        return self.__surfaces
+    def addSurface(self, surface):
+        self.__surfaces.append(surface)
     def onFrame(self):
         for p in players:
             if p.score >=MAX_SCORE:
                 self.stop()
+    def onCursorMove(self, event):
+        button=False
+        if event.source == avg.TRACK:
+            if event.x > 640:
+                if event.majoraxis[0]>0:
+                    y = event.y+event.majoraxis[1]*4
+                else:
+                    y = event.y-event.majoraxis[1]*4
+                x = event.x-abs(event.majoraxis[0]*4)
+            else:
+                if event.majoraxis[0]>0:
+                    y = event.y-event.majoraxis[1]*4
+                else:
+                    y = event.y+event.majoraxis[1]*4
+                x = event.x+abs(event.majoraxis[0]*4)
+            pos = Point(x,y)
+        else:
+            pos = Point(event.x, event.y)
+        for b in self.__touchactive:
+            # calculate distance to mouse event
+            #not real distance, but as we are looking for the smallest one we dont need to sqrt
+            dist=(pos.x-b.x)**2+(pos.y-b.y)**2
+            if(not button or dist<mindist):
+                mindist=dist
+                button=b
+        button.onMouse(pos);
+    def addTouchActive(self, obj):
+        self.__touchactive.append(obj)
+    
     def adjust_score(self):
         self.score.setText("%i:%i" % (players[0].score,players[1].score))
 
