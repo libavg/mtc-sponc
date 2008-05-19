@@ -27,8 +27,6 @@ from libavg import anim
 from random import random, seed
 import sys
 
-MAX_SCORE=25
-
 #GLOBAL LISTS
 
 class Clash(Point):
@@ -417,6 +415,8 @@ class IdleState:
         startButton = g_Player.getElementByID("startbutton")
         startButton.active = False
         anim.fadeOut(startButton, STATE_FADE_TIME)
+        startButton.setEventHandler(avg.CURSORDOWN, avg.MOUSE, None)
+        startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, None)
     def onStartClick(self, event):
         self.game.switchState(self.game.playingState)
 
@@ -426,26 +426,27 @@ class PlayingState:
         self.node = game.node
     def enter(self):
         self.__toUpdate=[]
-        self.game.showScore()
+        self.game.resetScores()
         self.ball = Ball(self.node.width/2,self.node.height/2,self.game)
         self.__toUpdate.append(self.ball)
-        g_Player.setOnFrameHandler(self.onFrame)
+        self.__onFrameHandler = g_Player.setOnFrameHandler(self.onFrame)
     def leave(self):
         self.ball.stop()
         self.ball = None
+        g_Player.clearInterval(self.__onFrameHandler)
     def onFrame(self):
         for x in self.__toUpdate:
             x.update()
-#        for p in self._players:
-#            if p.score >=MAX_SCORE:
-#                self.stop()
+        for p in self.game._players:
+            if p.score >=MAX_SCORE:
+                self.game.switchState(self.game.endState)
 
 class EndState:
     def __init__(self, game):
         self.game = game
         self.node = game.node
     def enter(self):
-        self.timeout = g_Player.setTimeout(5000, onTimeout)
+        self.timeout = g_Player.setTimeout(5000, self.onTimeout)
         startButton = g_Player.getElementByID("startbutton")
         startButton.active = True
         anim.fadeIn(startButton, STATE_FADE_TIME)
@@ -453,6 +454,11 @@ class EndState:
         startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, self.onStartClick)
     def leave(self):
         g_Player.clearInterval(self.timeout)
+        startButton = g_Player.getElementByID("startbutton")
+        startButton.setEventHandler(avg.CURSORDOWN, avg.MOUSE, None)
+        startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, None)
+        startButton.active = False
+        anim.fadeOut(startButton, STATE_FADE_TIME)
     def onTimeout(self):
         self.game.switchState(self.game.idleState)
     def onStartClick(self, event):
@@ -501,6 +507,8 @@ class Game:
         self.__states.append(self.idleState)
         self.playingState = PlayingState(self)
         self.__states.append(self.playingState)
+        self.endState = EndState(self)
+        self.__states.append(self.endState)
         self.curState = None
         self.switchState(self.idleState)
     def switchState(self, newState):
@@ -521,6 +529,10 @@ class Game:
         for p in self._players:
             if p != loser:
                 p.score+=1
+        self.showScore()
+    def resetScores(self):
+        for p in self._players:
+            p.score = 0
         self.showScore()
     def showScore(self):
         g_Player.getElementByID("leftplayerscore").text = str(self._players[0].score)
