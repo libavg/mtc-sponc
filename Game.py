@@ -440,6 +440,24 @@ class PlayingState:
 #            if p.score >=MAX_SCORE:
 #                self.stop()
 
+class EndState:
+    def __init__(self, game):
+        self.game = game
+        self.node = game.node
+    def enter(self):
+        self.timeout = g_Player.setTimeout(5000, onTimeout)
+        startButton = g_Player.getElementByID("startbutton")
+        startButton.active = True
+        anim.fadeIn(startButton, STATE_FADE_TIME)
+        startButton.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onStartClick)
+        startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, self.onStartClick)
+    def leave(self):
+        g_Player.clearInterval(self.timeout)
+    def onTimeout(self):
+        self.game.switchState(self.game.idleState)
+    def onStartClick(self, event):
+        self.game.switchState(self.game.playingState)
+
 class Game:
     def __init__(self):
         global g_Player
