@@ -25,7 +25,6 @@ from config import *
 from libavg import avg
 from libavg import anim
 from random import random, seed
-import GUI
 import sys
 
 MAX_SCORE=25
@@ -405,6 +404,8 @@ def winkelabstand(a,b):
 
 class Game:
     def __init__(self):
+        global g_Player
+        g_Player = avg.Player.get()
         self.node=g_Player.getElementByID("cage")
         seed()
         self.__surfaces=[]
@@ -497,7 +498,3 @@ class Game:
         anim.LinearAnim(background, "opacity", 400, 0.1, 0.3, False,
             lambda: anim.LinearAnim(background, "opacity", 400, 0.3, 0.1))
 
-
-def init(Player):
-    global g_Player
-    g_Player = Player

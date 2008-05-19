@@ -24,7 +24,6 @@ import sys, os, math
 from libavg import avg
 from libavg import anim
 
-import GUI
 import Game
 
 from config import *
@@ -71,9 +70,7 @@ def main():
     #       Log.EVENTS  |
     #       Log.EVENTS2  |
     0)
-    GUI.init(avgPlayer)
-    Game.init(avgPlayer)
-
+    
     avgPlayer.setResolution(1, 0, 0, 24)
     avgPlayer.loadFile("sponc.avg")
 
