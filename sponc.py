@@ -74,7 +74,7 @@ def main():
     GUI.init(avgPlayer)
     Game.init(avgPlayer)
 
-#    avgPlayer.setResolution(1, 0, 0, 24)
+    avgPlayer.setResolution(1, 0, 0, 24)
     avgPlayer.loadFile("sponc.avg")
 
     Tracker = avgPlayer.addTracker("avgtrackerrc")

@@ -255,20 +255,26 @@ class Player:
                 self.onCursorDown(event, pos)
             elif event.type == avg.CURSORMOTION:
                 self.onCursorMotion(event, pos)
-            elif event.type == avg.CURSORUP:
-                self.onCursorUp(event, pos)
+        if event.type == avg.CURSORUP:
+            self.onCursorUp(event, pos)
     def onCursorDown(self, event, pos):
         mindist = 10000
+        curBatpoint = None
         for batpoint in self.ends:
             dist=math.sqrt((pos.x-batpoint.x)**2+(pos.y-batpoint.y)**2)
             if batpoint.getCursorID() == None and dist<mindist:
                 mindist=dist
                 curBatpoint=batpoint
-        curBatpoint.onCursorDown(event, pos)
+        if curBatpoint:	
+            curBatpoint.onCursorDown(event, pos)
     def onCursorMotion(self, event, pos):
+        bMoved = False
         for batpoint in self.ends:
             if batpoint.getCursorID() == event.cursorid:
+                bMoved = True
                 batpoint.onCursorMove(pos)
+        if not(bMoved):
+            self.onCursorDown(event, pos)
     def onCursorUp(self, event, pos):
         for batpoint in self.ends:
             if batpoint.getCursorID() == event.cursorid:
@@ -377,9 +383,10 @@ class Ball(Point):
         self.direction=ausfall;
 
     def hitSpeedup(self, factor):
-        hitSpeed = 3/factor
+        hitSpeed = 5/factor
         if hitSpeed > 20:
             hitSpeed = 20
+        print hitSpeed
         self.speed=hitSpeed+BASE_BALL_SPEED
 
 def sgn(x):
@@ -446,11 +453,11 @@ class Game:
         self.__toUpdate.append(self.ball)
         g_Player.setOnFrameHandler(self.onFrame)
         self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorEvent)
-        self.node.setEventHandler(avg.CURSORMOTION, avg.TRACK, self.onCursorEvent)
+        self.node.setEventHandler(avg.CURSORMOTION, avg.TOUCH, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onCursorEvent)
-        self.node.setEventHandler(avg.CURSORDOWN, avg.TRACK, self.onCursorEvent)
+        self.node.setEventHandler(avg.CURSORDOWN, avg.TOUCH, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORUP, avg.MOUSE, self.onCursorEvent)
-        self.node.setEventHandler(avg.CURSORUP, avg.TRACK, self.onCursorEvent)
+        self.node.setEventHandler(avg.CURSORUP, avg.TOUCH, self.onCursorEvent)
 
     def leave(self):
         anim.fadeOut(self.node,800)
