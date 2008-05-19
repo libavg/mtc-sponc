@@ -493,6 +493,10 @@ class Game:
         scoreDisplay=g_Player.getElementByID("score")
         anim.LinearAnim(scoreDisplay, "opacity", 400, 1, 0.3, False,
             lambda: anim.LinearAnim(scoreDisplay, "opacity", 400, 0.3, 1))
+        background=g_Player.getElementByID("background_texture")
+        anim.LinearAnim(background, "opacity", 400, 0.1, 0.3, False,
+            lambda: anim.LinearAnim(background, "opacity", 400, 0.3, 0.1))
+
 
 def init(Player):
     global g_Player

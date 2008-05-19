@@ -3,19 +3,19 @@
 <avg id="main" width="1280" height="800" mediadir="media">
     <div id="cage" x="0" y="0" width="1280" height="800" active="1" opacity="0">
         <image width="1280" height="800" href="background_color.png" opacity="0.5"/>
-        <image href="background_texture.png" opacity="0.1"/>
+        <image id="background_texture" href="background_texture.png" blendmode="add" opacity="0.1"/>
         <image href="border.png" opacity="1"/>
         <image x="400" href="third_line.png" opacity="1"/>
         <image x="880" href="third_line.png" opacity="1"/>
         <div id="score" x="0" y="180">
             <words x="600" y="0" parawidth="80" alignment="center" text=":"
-                    font="DS-Digital" size="150" color="f0ead8"/>
+                    font="DS-Digital" size="120" color="f0ead8"/>
             <words id="leftplayerscore" x="445" y="0" parawidth="180" alignment="right" 
                     text="00"
-                    font="DS-Digital" size="150" color="f0ead8"/>
+                    font="DS-Digital" size="120" color="f0ead8"/>
             <words id="rightplayerscore" x="655" y="0" parawidth="180" alignment="left"
                     text="00"
-                    font="DS-Digital" size="150" color="f0ead8"/>
+                    font="DS-Digital" size="120" color="f0ead8"/>
         </div>
     </div>
     <image id="fingers" x="0" y="0" width="1280" height="800" angle="3.14159" sensitive="false"/>
