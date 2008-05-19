@@ -2,6 +2,8 @@
 
 import math
 
+STATE_FADE_TIME = 800
+
 MAX_BAT_LENGTH=350
 FINGER_ROT_SPEED=-math.pi
 

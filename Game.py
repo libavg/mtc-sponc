@@ -196,26 +196,27 @@ class BatLine(Line):
             (F,O)=(O,F)
         N=new
         T=Triangle(F,O,N)
-        ball = self.game.ball
-        if T.contains(ball):
+        if isinstance(self.game.curState, PlayingState): 
+            ball = self.game.curState.ball
+            if T.contains(ball):
 #               if Line(F,N).getAngle()-Line(F,O).getAngle()<0.05:
 #                   return
 #               print "triangle: %s, ball=%s" % (T,ball)
-            moveline=Line(O,N)
-            newdir=moveline.getAngle()+0.01
-            ball.direction=newdir
-            ball.updateNext()
-            newbat=Line(F,N)
-            newpos=newbat.collide(moveline)
+                moveline=Line(O,N)
+                newdir=moveline.getAngle()+0.01
+                ball.direction=newdir
+                ball.updateNext()
+                newbat=Line(F,N)
+                newpos=newbat.collide(moveline)
 #               print "%s and %s collide at %s" % (newbat,moveline,newpos)
-            if(newpos): #XXX
-                ball.goto(newpos.x,newpos.y)
-            Clash(self.game, ball)
-            ball.hitSpeedup(self.getLength()/(MAX_BAT_LENGTH*2))
-            ball.update()
+                if(newpos): #XXX
+                    ball.goto(newpos.x,newpos.y)
+                Clash(self.game, ball)
+                ball.hitSpeedup(self.getLength()/(MAX_BAT_LENGTH*2))
+                ball.update()
 
 class Player:
-    def __init__(self,cage,batType, game):
+    def __init__(self,cage, game):
         self.cage=cage
         self.score=0
         self.game=game
@@ -385,7 +386,6 @@ class Ball(Point):
         hitSpeed = 5/factor
         if hitSpeed > 20:
             hitSpeed = 20
-        print hitSpeed
         self.speed=hitSpeed+BASE_BALL_SPEED
 
 def sgn(x):
@@ -402,57 +402,75 @@ def winkelabstand(a,b):
     d*=sgn(a-b)
     return d
 
+class IdleState:
+    def __init__(self, game):
+        self.game = game
+        self.node = game.node
+    def enter(self):
+        self.game.hideScore()
+        startButton = g_Player.getElementByID("startbutton")
+        startButton.active = True
+        anim.fadeIn(startButton, STATE_FADE_TIME)
+        startButton.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onStartClick)
+        startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, self.onStartClick)
+    def leave(self):
+        startButton = g_Player.getElementByID("startbutton")
+        startButton.active = False
+        anim.fadeOut(startButton, STATE_FADE_TIME)
+    def onStartClick(self, event):
+        self.game.switchState(self.game.playingState)
+
+class PlayingState:
+    def __init__(self, game):
+        self.game = game
+        self.node = game.node
+    def enter(self):
+        self.__toUpdate=[]
+        self.game.showScore()
+        self.ball = Ball(self.node.width/2,self.node.height/2,self.game)
+        self.__toUpdate.append(self.ball)
+        g_Player.setOnFrameHandler(self.onFrame)
+    def leave(self):
+        self.ball.stop()
+        self.ball = None
+    def onFrame(self):
+        for x in self.__toUpdate:
+            x.update()
+#        for p in self._players:
+#            if p.score >=MAX_SCORE:
+#                self.stop()
+
 class Game:
     def __init__(self):
         global g_Player
         g_Player = avg.Player.get()
         self.node=g_Player.getElementByID("cage")
         seed()
-        self.__surfaces=[]
-
-    def enter(self):
-        self.__toUpdate=[]
-        batType=0
-
+        self._surfaces=[]
+        
+        self.node.active = True
         w = self.node.width
         h = self.node.height
         playerWidth=w*(400.0/1260)
 
-        playerleft=Player(Box(0,0,playerWidth,h),batType,self)
-        playerright=Player(Box(w-playerWidth,0,playerWidth,h),
-                batType,self)
-        self.__players = [playerleft, playerright] 
-    
-        self.adjust_score()
+        playerleft=Player(Box(0,0,playerWidth,h),self)
+        playerright=Player(Box(w-playerWidth,0,playerWidth,h), self)
+        self._players = [playerleft, playerright] 
 
-        topline=Line(
-                Point(-10,0),
-                Point(w+10,0)
-                )
-        self.__surfaces.append(topline)
-        bottomline=Line(
-                Point(-10,h),
-                Point(w+10,h)
-                )
-        self.__surfaces.append(bottomline)
+        topline=Line(Point(-10,0), Point(w+10,0))
+        self._surfaces.append(topline)
+        
+        bottomline=Line(Point(-10,h), Point(w+10,h))
+        self._surfaces.append(bottomline)
 
-        leftbound=BoundaryLine(
-                Point(0,-10),
-                Point(0,h+10),
-                playerleft
-                )
-        self.__surfaces.append(leftbound)
-        rightbound=BoundaryLine(
-                Point(w,-10),
-                Point(w,h+10),
-                playerright
-                )
-        self.__surfaces.append(rightbound)
+        leftbound=BoundaryLine(Point(0,-10), Point(0,h+10), playerleft)
+        self._surfaces.append(leftbound)
+
+        rightbound=BoundaryLine(Point(w,-10), Point(w,h+10), playerright)
+        self._surfaces.append(rightbound)
 
         anim.fadeIn(self.node,800,1.0)
-        self.ball = Ball(w/2,h/2,self)
-        self.__toUpdate.append(self.ball)
-        g_Player.setOnFrameHandler(self.onFrame)
+        
         self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORMOTION, avg.TOUCH, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onCursorEvent)
@@ -460,41 +478,41 @@ class Game:
         self.node.setEventHandler(avg.CURSORUP, avg.MOUSE, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORUP, avg.TOUCH, self.onCursorEvent)
 
-    def leave(self):
-        anim.fadeOut(self.node,800)
-        self.__players = []
-        self.ball.stop()
-        self.__surfaces = []
-        self.score.stop()
-        g_Player.stop()
+        self.__states = []
+        self.idleState = IdleState(self)
+        self.__states.append(self.idleState)
+        self.playingState = PlayingState(self)
+        self.__states.append(self.playingState)
+        self.curState = None
+        self.switchState(self.idleState)
+    def switchState(self, newState):
+        if self.curState != None:
+            self.curState.leave()
+        self.curState = newState
+        newState.enter()
     def getSurfaces(self):
-        return self.__surfaces
+        return self._surfaces
     def addSurface(self, surface):
-        self.__surfaces.append(surface)
-    def onFrame(self):
-        for x in self.__toUpdate:
-            x.update()
-        for p in self.__players:
-            if p.score >=MAX_SCORE:
-                self.stop()
-        
+        self._surfaces.append(surface)
     def onCursorEvent(self, event):
-        for player in self.__players:
+        for player in self._players:
             player.onCursorEvent(event)
     def addNode(self, node):
         self.node.appendChild(node)
-    
-    def adjust_score(self, loser = None):
-        if loser:
-            for p in self.__players:
-                if p != loser:
-                    p.score+=1
-        g_Player.getElementByID("leftplayerscore").text = str(self.__players[0].score)
-        g_Player.getElementByID("rightplayerscore").text = str(self.__players[1].score)
+    def adjust_score(self, loser):
+        for p in self._players:
+            if p != loser:
+                p.score+=1
+        self.showScore()
+    def showScore(self):
+        g_Player.getElementByID("leftplayerscore").text = str(self._players[0].score)
+        g_Player.getElementByID("rightplayerscore").text = str(self._players[1].score)
         scoreDisplay=g_Player.getElementByID("score")
         anim.LinearAnim(scoreDisplay, "opacity", 400, 1, 0.3, False,
             lambda: anim.LinearAnim(scoreDisplay, "opacity", 400, 0.3, 1))
         background=g_Player.getElementByID("background_texture")
         anim.LinearAnim(background, "opacity", 400, 0.1, 0.3, False,
             lambda: anim.LinearAnim(background, "opacity", 400, 0.3, 0.1))
-
+    def hideScore(self):
+        scoreDisplay=g_Player.getElementByID("score")
+        anim.fadeOut(scoreDisplay, 400)

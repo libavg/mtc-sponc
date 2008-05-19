@@ -28,7 +28,7 @@ import Game
 
 from config import *
 
-global sponc
+global game
 
 class Sponc:
     def __init__(self):
@@ -46,7 +46,8 @@ class Sponc:
 def main():
     def myinit():
         Tracker.setDebugImages(True, True)
-        sponc = Sponc()
+        game = Game.Game()
+
     def showTrackerImage():
         Bitmap = Tracker.getImage(avg.IMG_FINGERS)
         Node = avgPlayer.getElementByID("fingers")
@@ -71,7 +72,7 @@ def main():
     #       Log.EVENTS2  |
     0)
     
-    avgPlayer.setResolution(1, 0, 0, 24)
+#    avgPlayer.setResolution(1, 0, 0, 24)
     avgPlayer.loadFile("sponc.avg")
 
     Tracker = avgPlayer.addTracker("avgtrackerrc")
