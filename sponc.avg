@@ -20,7 +20,11 @@
                     opacity="0"/>
         </div>
     </div>
-    <words id="startbutton" x="600" y="550" text="Start" 
-            font="DS-Digital" size="120" color="f0ead8" active="False" opacity="0"/>
+    <div id="startbutton" x="535" y="550" active="False" opacity="0">
+        <image href="start_button_normal.png"/>
+        <image href="start_button_pressed.png"/>
+        <image href="start_button_mouseover.png"/>
+        <image href="start_button_mouseover.png"/>
+    </div>
     <image id="fingers" x="0" y="0" width="1280" height="800" angle="3.14159" sensitive="false"/>
 </avg>

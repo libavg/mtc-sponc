@@ -24,6 +24,7 @@ from Geometry import Point, Box, Line, Triangle
 from config import *
 from libavg import avg
 from libavg import anim
+from libavg import button
 from random import random, seed
 import sys
 
@@ -401,23 +402,31 @@ def winkelabstand(a,b):
     d*=sgn(a-b)
     return d
 
+class StartButton(button.Button):
+    def __init__(self, onStartClick):
+        startNode = g_Player.getElementByID("startbutton")
+        startNode.active = True
+        anim.fadeIn(startNode, STATE_FADE_TIME)
+        button.Button.__init__(self, startNode, onStartClick)
+    def delete(self):
+        startNode = g_Player.getElementByID("startbutton")
+        startNode.active = False
+        anim.fadeOut(startNode, STATE_FADE_TIME)
+        button.Button.delete(self)
+        
+
 class IdleState:
     def __init__(self, game):
         self.game = game
         self.node = game.node
     def enter(self):
         self.game.hideScore()
-        startButton = g_Player.getElementByID("startbutton")
-        startButton.active = True
-        anim.fadeIn(startButton, STATE_FADE_TIME)
-        startButton.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onStartClick)
-        startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, self.onStartClick)
+        self.startButton = StartButton(self.onStartClick)
     def leave(self):
         startButton = g_Player.getElementByID("startbutton")
         startButton.active = False
-        anim.fadeOut(startButton, STATE_FADE_TIME)
-        startButton.setEventHandler(avg.CURSORDOWN, avg.MOUSE, None)
-        startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, None)
+        self.startButton.delete()
+        self.startButton = None
     def onStartClick(self, event):
         self.game.switchState(self.game.playingState)
 
@@ -448,25 +457,17 @@ class EndState:
         self.node = game.node
     def enter(self):
         self.timeout = g_Player.setTimeout(5000, self.onTimeout)
-        startButton = g_Player.getElementByID("startbutton")
-        startButton.active = True
-        anim.fadeIn(startButton, STATE_FADE_TIME)
-        startButton.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onStartClick)
-        startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, self.onStartClick)
         winnerField = g_Player.getElementByID("winner")
+        self.startButton = StartButton(self.onStartClick)
         anim.fadeIn(winnerField, STATE_FADE_TIME)
         if self.game.getWinner() == 0:
             winnerField.x = 0
         else:
             winnerField.x = 880
-
     def leave(self):
         g_Player.clearInterval(self.timeout)
-        startButton = g_Player.getElementByID("startbutton")
-        startButton.setEventHandler(avg.CURSORDOWN, avg.MOUSE, None)
-        startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, None)
-        startButton.active = False
-        anim.fadeOut(startButton, STATE_FADE_TIME)
+        self.startButton.delete()
+        self.startButton = None
         winnerField = g_Player.getElementByID("winner")
         anim.fadeOut(winnerField, STATE_FADE_TIME)
     def onTimeout(self):
