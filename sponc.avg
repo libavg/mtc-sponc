@@ -8,7 +8,7 @@
     <image x="400" href="third_line.png" opacity="1"/>
     <image x="880" href="third_line.png" opacity="1"/>
     <div id="cage" x="0" y="0" width="1280" height="800" active="0" opacity="0">
-        <div id="textfield" x="0" y="100">
+        <div id="textfield" x="0" y="170">
             <words x="600" y="0" parawidth="80" alignment="center" text=":"
                     font="DS-Digital" size="80" color="f0ead8"/>
             <words id="leftplayerscore" x="450" y="0" parawidth="180" alignment="right" 

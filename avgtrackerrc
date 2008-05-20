@@ -5,12 +5,12 @@
   <device value=""/>
   <format value="MONO8"/>
   <size x="640" y="480"/>
-  <fps value="30"/>
+  <fps value="60"/>
   <brightness value="1"/>
   <exposure value="7"/>
   <gamma value="0"/>
   <gain value="16"/>
-  <shutter value="138"/>
+  <shutter value="368"/>
  </camera>
  <tracker>
   <prescale value="1"/>
@@ -26,7 +26,7 @@
    <eccentricitybounds min="1" max="80"/>
   </track>
   <touch>
-   <threshold value="155"/>
+   <threshold value="145"/>
    <similarity value="100"/>
    <areabounds min="10" max="200000"/>
    <eccentricitybounds min="1" max="800"/>
