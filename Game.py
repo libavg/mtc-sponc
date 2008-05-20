@@ -373,7 +373,8 @@ class Ball(Point):
             return False
 
         normale=line.getNormal()
-        if(abs(winkelabstand(normale+math.pi,self.direction))>abs(winkelabstand(normale,self.direction))):
+        if(abs(winkelabstand(normale+math.pi,self.direction))>
+                abs(winkelabstand(normale,self.direction))):
             normale+=math.pi
 
         einfall=winkelabstand(normale,self.direction+math.pi)
@@ -452,6 +453,13 @@ class EndState:
         anim.fadeIn(startButton, STATE_FADE_TIME)
         startButton.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onStartClick)
         startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, self.onStartClick)
+        winnerField = g_Player.getElementByID("winner")
+        anim.fadeIn(winnerField, STATE_FADE_TIME)
+        if self.game.getWinner() == 0:
+            winnerField.x = 0
+        else:
+            winnerField.x = 880
+
     def leave(self):
         g_Player.clearInterval(self.timeout)
         startButton = g_Player.getElementByID("startbutton")
@@ -459,6 +467,8 @@ class EndState:
         startButton.setEventHandler(avg.CURSORDOWN, avg.TOUCH, None)
         startButton.active = False
         anim.fadeOut(startButton, STATE_FADE_TIME)
+        winnerField = g_Player.getElementByID("winner")
+        anim.fadeOut(winnerField, STATE_FADE_TIME)
     def onTimeout(self):
         self.game.switchState(self.game.idleState)
     def onStartClick(self, event):
@@ -530,6 +540,13 @@ class Game:
             if p != loser:
                 p.score+=1
         self.showScore()
+    def getWinner(self):
+        i = 0
+        for p in self._players:
+            if p.score==MAX_SCORE:
+                return i
+            i += 1
+        bork() # We shouldn't get here.
     def resetScores(self):
         for p in self._players:
             p.score = 0
@@ -537,12 +554,12 @@ class Game:
     def showScore(self):
         g_Player.getElementByID("leftplayerscore").text = str(self._players[0].score)
         g_Player.getElementByID("rightplayerscore").text = str(self._players[1].score)
-        scoreDisplay=g_Player.getElementByID("score")
+        scoreDisplay=g_Player.getElementByID("textfield")
         anim.LinearAnim(scoreDisplay, "opacity", 400, 1, 0.3, False,
             lambda: anim.LinearAnim(scoreDisplay, "opacity", 400, 0.3, 1))
         background=g_Player.getElementByID("background_texture")
         anim.LinearAnim(background, "opacity", 400, 0.1, 0.3, False,
             lambda: anim.LinearAnim(background, "opacity", 400, 0.3, 0.1))
     def hideScore(self):
-        scoreDisplay=g_Player.getElementByID("score")
+        scoreDisplay=g_Player.getElementByID("textfield")
         anim.fadeOut(scoreDisplay, 400)
