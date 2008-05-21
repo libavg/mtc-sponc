@@ -30,23 +30,11 @@ from config import *
 
 global game
 
-class Sponc:
-    def __init__(self):
-        self.__states = []
-        self.gameState = Game.Game()
-        self.__states.append(self.gameState)
-        self.__curState = None
-        self.switchState(self.gameState)
-    def switchState(self, newState):
-        if self.__curState != None:
-            self.__curState.leave()
-        self.__curState = newState
-        newState.enter()
-
 def main():
     def myinit():
         Tracker.setDebugImages(True, True)
-        game = Game.Game()
+        game = Game.Game(avgPlayer.getElementByID("main"))
+        game.enter()
 
     def showTrackerImage():
         Bitmap = Tracker.getImage(avg.IMG_FINGERS)

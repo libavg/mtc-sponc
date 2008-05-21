@@ -26,9 +26,7 @@ from libavg import avg
 from libavg import anim
 from libavg import button
 from random import random, seed
-import sys
-
-#GLOBAL LISTS
+import sys,os
 
 class Clash(Point):
     """clash explosion"""
@@ -294,8 +292,8 @@ class Ball(Point):
         balldiv=g_Player.createNode('<div x="%i" y="%i"></div>' % (x,y))
         img = g_Player.createNode('image', {"href":"ball.png"})
         balldiv.appendChild(img)
-        self.radius = img.width/2.0
         game.addNode(balldiv)
+        self.radius = img.width/2.0
         return balldiv
     def stop(self):
         delNode(self.node)
@@ -476,14 +474,50 @@ class EndState:
         self.game.switchState(self.game.playingState)
 
 class Game:
-    def __init__(self):
+    def __init__(self, parentNode):
         global g_Player
         g_Player = avg.Player.get()
-        self.node=g_Player.getElementByID("cage")
+        self.parentNode=parentNode
+
+        self.mainNode = g_Player.createNode(
+        """
+        <div active="False" opacity="0">
+            <image width="1280" height="800" href="background_color.png" opacity="0.5"/>
+            <image id="background_texture" href="background_texture.png" blendmode="add"
+                    opacity="0.1"/>
+            <image href="border.png" opacity="1"/>
+            <image x="400" href="third_line.png" opacity="1"/>
+            <image x="880" href="third_line.png" opacity="1"/>
+            <div id="cage" x="0" y="0" width="1280" height="800">
+                <div id="textfield" x="0" y="170">
+                    <words x="600" y="0" parawidth="80" alignment="center" text=":"
+                            font="DS-Digital" size="80" color="f0ead8"/>
+                    <words id="leftplayerscore" x="450" y="0" parawidth="180" alignment="right" 
+                            text="00" font="DS-Digital" size="80" color="f0ead8"/>
+                    <words id="rightplayerscore" x="650" y="0" parawidth="180" alignment="left"
+                            text="00" font="DS-Digital" size="80" color="f0ead8"/>
+                    <words id="winner" x="0" y="0" parawidth="400" alignment="center"
+                            text="Winner" font="DS-Digital" size="80" color="f0ead8"
+                            opacity="0"/>
+                </div>
+            </div>
+            <div id="startbutton" x="535" y="550" active="False" opacity="0">
+                <image href="start_button_normal.png"/>
+                <image href="start_button_pressed.png"/>
+                <image href="start_button_mouseover.png"/>
+                <image href="start_button_mouseover.png"/>
+            </div>
+        </div>
+        """)
+        sponcDir = os.getenv("SPONC_DIR")
+        if sponcDir != None:
+            sponcDir += "/media"
+            self.mainNode.mediadir = sponcDir
+        parentNode.insertChild(self.mainNode, 0)
+        self.node = g_Player.getElementByID("cage")
         seed()
         self._surfaces=[]
         
-        self.node.active = True
         w = self.node.width
         h = self.node.height
         playerWidth=w*(400.0/1260)
@@ -504,8 +538,6 @@ class Game:
         rightbound=BoundaryLine(Point(w,-10), Point(w,h+10), playerright)
         self._surfaces.append(rightbound)
 
-        anim.fadeIn(self.node,800,1.0)
-        
         self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORMOTION, avg.TOUCH, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onCursorEvent)
@@ -522,6 +554,15 @@ class Game:
         self.__states.append(self.endState)
         self.curState = None
         self.switchState(self.idleState)
+    def enter(self):
+        self.mainNode.active = True
+        anim.fadeIn(self.mainNode,STATE_FADE_TIME,1.0)
+    def leave(self):
+        self.mainNode.active = False
+        anim.fadeOut(self.mainNode,STATE_FADE_TIME)
+        
+        g_Player.setTimeout(STATE_FADE_TIME, lambda: self.switchState(self.idleState))
+
     def switchState(self, newState):
         if self.curState != None:
             self.curState.leave()

@@ -1,30 +1,5 @@
 <?xml version="1.0"?>
 <!DOCTYPE avg SYSTEM "../../libavg/doc/avg.dtd">
 <avg id="main" width="1280" height="800" mediadir="media">
-    <image width="1280" height="800" href="background_color.png" opacity="0.5"/>
-    <image id="background_texture" href="background_texture.png" blendmode="add"
-            opacity="0.1"/>
-    <image href="border.png" opacity="1"/>
-    <image x="400" href="third_line.png" opacity="1"/>
-    <image x="880" href="third_line.png" opacity="1"/>
-    <div id="cage" x="0" y="0" width="1280" height="800" active="0" opacity="0">
-        <div id="textfield" x="0" y="170">
-            <words x="600" y="0" parawidth="80" alignment="center" text=":"
-                    font="DS-Digital" size="80" color="f0ead8"/>
-            <words id="leftplayerscore" x="450" y="0" parawidth="180" alignment="right" 
-                    text="00" font="DS-Digital" size="80" color="f0ead8"/>
-            <words id="rightplayerscore" x="650" y="0" parawidth="180" alignment="left"
-                    text="00" font="DS-Digital" size="80" color="f0ead8"/>
-            <words id="winner" x="0" y="0" parawidth="400" alignment="center"
-                    text="Winner" font="DS-Digital" size="80" color="f0ead8"
-                    opacity="0"/>
-        </div>
-    </div>
-    <div id="startbutton" x="535" y="550" active="False" opacity="0">
-        <image href="start_button_normal.png"/>
-        <image href="start_button_pressed.png"/>
-        <image href="start_button_mouseover.png"/>
-        <image href="start_button_mouseover.png"/>
-    </div>
     <image id="fingers" x="0" y="0" width="1280" height="800" angle="3.14159" sensitive="false"/>
 </avg>
