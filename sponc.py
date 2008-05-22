@@ -19,13 +19,9 @@
 # You should have received a copy of the GNU General Public License
 # along with sponc.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, math
-
 from libavg import avg
-from libavg import anim
 
 import Game
-
 from config import *
 
 global game
