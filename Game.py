@@ -482,6 +482,7 @@ class Game:
         self.mainNode = g_Player.createNode(
         """
         <div active="False" opacity="0">
+            <image width="1280" height="800" href="black.png"/>
             <image width="1280" height="800" href="background_color.png" opacity="0.5"/>
             <image id="background_texture" href="background_texture.png" blendmode="add"
                     opacity="0.1"/>
@@ -556,15 +557,14 @@ class Game:
         self.switchState(self.idleState)
     def enter(self):
         self.mainNode.active = True
-        anim.fadeIn(self.mainNode,STATE_FADE_TIME,1.0)
+        anim.fadeIn(self.mainNode,400,1.0)
     def leave(self):
         def hideMainNode():
             self.mainNode.opacity=0
-        self.mainNode.active = False
+            self.mainNode.active = False
+            self.switchState(self.idleState)
         self.parentNode.reorderChild(self.parentNode.indexOf(self.mainNode), 0)
         g_Player.setTimeout(400, hideMainNode)
-        g_Player.setTimeout(STATE_FADE_TIME, lambda: self.switchState(self.idleState))
-
     def switchState(self, newState):
         if self.curState != None:
             self.curState.leave()
