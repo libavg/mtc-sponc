@@ -558,9 +558,11 @@ class Game:
         self.mainNode.active = True
         anim.fadeIn(self.mainNode,STATE_FADE_TIME,1.0)
     def leave(self):
+        def hideMainNode():
+            self.mainNode.opacity=0
         self.mainNode.active = False
-        anim.fadeOut(self.mainNode,STATE_FADE_TIME)
-        
+        self.parentNode.reorderChild(self.parentNode.indexOf(self.mainNode), 0)
+        g_Player.setTimeout(400, hideMainNode)
         g_Player.setTimeout(STATE_FADE_TIME, lambda: self.switchState(self.idleState))
 
     def switchState(self, newState):
