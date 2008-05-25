@@ -53,7 +53,7 @@ class Clash(Point):
         delNode(self.node)
 
 class BoundaryLine(Line):
-    """line to be put at the left and right play area ends - whenever its hit,
+    """line to be put at the left and right play area ends - whenever it's hit,
     the corresponding player loses a point"""
     def __init__(self,p1,p2,player):
         Line.__init__(self,p1,p2)
@@ -245,6 +245,9 @@ class Player:
             return Point(x,y)
         else:
             return Point(event.x, event.y)
+    def release(self):
+        for batpoint in self.ends:
+            batpoint.onCursorUp()
     def onCursorEvent(self, event):
         pos = self.adjustCursorPos(event)
         if self.cage.contains(pos):
@@ -555,16 +558,23 @@ class Game:
         self.__states.append(self.endState)
         self.curState = None
         self.switchState(self.idleState)
+        self.hideMainNodeTimeout = None
     def enter(self):
         self.mainNode.active = True
+        self.mainNode.sensitive = True
         anim.fadeIn(self.mainNode,400,1.0)
+        if self.hideMainNodeTimeout:
+            g_Player.clearInterval(self.hideMainNodeTimeout)
     def leave(self):
         def hideMainNode():
             self.mainNode.opacity=0
             self.mainNode.active = False
             self.switchState(self.idleState)
         self.parentNode.reorderChild(self.parentNode.indexOf(self.mainNode), 0)
-        g_Player.setTimeout(400, hideMainNode)
+        for player in self._players:
+            player.release()
+        self.mainNode.sensitive = False
+        self.hideMainNodeTimeout = g_Player.setTimeout(400, hideMainNode)
     def switchState(self, newState):
         if self.curState != None:
             self.curState.leave()
