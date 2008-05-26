@@ -29,7 +29,7 @@ global game
 def main():
     def myinit():
         Tracker.setDebugImages(True, True)
-        game = Game.Game(avgPlayer.getElementByID("main"))
+        game = Game.Game(avgPlayer.getElementByID("main"), True)
         game.enter()
 
     def showTrackerImage():

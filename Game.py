@@ -477,7 +477,7 @@ class EndState:
         self.game.switchState(self.game.playingState)
 
 class Game:
-    def __init__(self, parentNode):
+    def __init__(self, parentNode, mouseActive):
         global g_Player
         g_Player = avg.Player.get()
         self.parentNode=parentNode
@@ -542,11 +542,12 @@ class Game:
         rightbound=BoundaryLine(Point(w,-10), Point(w,h+10), playerright)
         self._surfaces.append(rightbound)
 
-        self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorEvent)
+        if mouseActive:
+            self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorEvent)
+            self.node.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onCursorEvent)
+            self.node.setEventHandler(avg.CURSORUP, avg.MOUSE, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORMOTION, avg.TOUCH, self.onCursorEvent)
-        self.node.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORDOWN, avg.TOUCH, self.onCursorEvent)
-        self.node.setEventHandler(avg.CURSORUP, avg.MOUSE, self.onCursorEvent)
         self.node.setEventHandler(avg.CURSORUP, avg.TOUCH, self.onCursorEvent)
 
         self.__states = []
