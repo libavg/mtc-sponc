@@ -27,6 +27,12 @@ from libavg import anim
 from libavg import button
 from random import random, seed
 import sys,os
+from pkaudio import scsynth
+import time
+
+def screenPosToSoundPos(screenPos):
+    return ((screenPos.x / 1280.0) * 2 - 1.0, (screenPos.y / 800.0) * 2 - 1.0)
+
 
 class Clash(Point):
     """clash explosion"""
@@ -52,6 +58,20 @@ class Clash(Point):
         g_Player.clearInterval(self.handler)
         delNode(self.node)
 
+class SideLine(Line):
+    def __init__(self,p1,p2):
+        Line.__init__(self,p1,p2)
+    def onClash(self,object,position):
+        Line.onClash(self, object, position)
+        if isinstance(object, Ball): 
+            self.__playSound(position)
+            return True
+    def __playSound(self, position):
+        global g_scPlayer
+
+        spos = screenPosToSoundPos(position)
+        g_scPlayer.playSample(g_sampDict['boundary'], spos[0], spos[1])
+
 class BoundaryLine(Line):
     """line to be put at the left and right play area ends - whenever it's hit,
     the corresponding player loses a point"""
@@ -62,9 +82,16 @@ class BoundaryLine(Line):
         if isinstance(object, Ball): 
             bGameOver = self.player.lose()
             object.reset()
+            self.__playSound(position)
             return True
     def isHard(self):
         return False
+
+    def __playSound(self, position):
+        global g_scPlayer
+
+        spos = screenPosToSoundPos(position)
+        g_scPlayer.playSample(g_sampDict['goal'], spos[0], spos[1])
 
 class Batpoint(Point):
     def __init__(self,player,pos,size=50):
@@ -178,6 +205,8 @@ class BatLine(Line):
         if self.isHard():
             Clash(self.game, position)
             object.hitSpeedup(self.getLength()/MAX_BAT_LENGTH)
+            
+            self.__playSound(position)
         Line.onClash(self,object,position)
         return False
     def moveBounce(self,end,new):
@@ -196,6 +225,7 @@ class BatLine(Line):
         if isinstance(self.game.curState, PlayingState): 
             ball = self.game.curState.ball
             if T.contains(ball):
+                self.__playSound(N)
 #               if Line(F,N).getAngle()-Line(F,O).getAngle()<0.05:
 #                   return
 #               print "triangle: %s, ball=%s" % (T,ball)
@@ -212,8 +242,20 @@ class BatLine(Line):
                 ball.hitSpeedup(self.getLength()/(MAX_BAT_LENGTH*2))
                 ball.update()
 
+    def __playSound(self, position):
+        global g_scPlayer
+
+        spos = screenPosToSoundPos(position)
+        print position, spos
+        if position.x < 640:
+            g_scPlayer.playSample(g_sampDict['ping_left'], spos[0], spos[1])
+        else:
+            g_scPlayer.playSample(g_sampDict['ping_right'], spos[0], spos[1])
+
+
 class Player:
     def __init__(self,cage, game):
+        global g_scPlayer
         self.cage=cage
         self.score=0
         self.game=game
@@ -221,6 +263,16 @@ class Player:
         xpos=cage.x+cage.width/2
         self.addBatpoints(Point(xpos,cage.height*1/3),Point(xpos,cage.height*2/3))
         self.batline=BatLine("bat.png",self.ends,game)
+        self.__playerActive = False
+        self.__soundStopTimeout = -1
+        self.__elSynthSid = g_scPlayer.play_rt(g_ElSynth)
+        time.sleep(0.1)
+        if cage.x == 0: # XXX: left player
+            g_scPlayer.set(self.__elSynthSid, 'baseFreq', 69)
+            g_scPlayer.set(self.__elSynthSid, 'xpos', -1)
+        else: # right player
+            g_scPlayer.set(self.__elSynthSid, 'baseFreq', 82)
+            g_scPlayer.set(self.__elSynthSid, 'xpos', 1)
     def addBatpoints(self,pos1,pos2):
         self.ends=(
                 Batpoint(self, pos1),
@@ -248,6 +300,7 @@ class Player:
     def release(self):
         for batpoint in self.ends:
             batpoint.onCursorUp()
+        self.__changeSound()
     def onCursorEvent(self, event):
         pos = self.adjustCursorPos(event)
         if self.cage.contains(pos):
@@ -267,6 +320,7 @@ class Player:
                 curBatpoint=batpoint
         if curBatpoint:	
             curBatpoint.onCursorDown(event, pos)
+        self.__changeSound()
     def onCursorMotion(self, event, pos):
         bMoved = False
         for batpoint in self.ends:
@@ -275,10 +329,32 @@ class Player:
                 batpoint.onCursorMove(pos)
         if not(bMoved):
             self.onCursorDown(event, pos)
+        self.__changeSound()
     def onCursorUp(self, event, pos):
         for batpoint in self.ends:
             if batpoint.getCursorID() == event.cursorid:
                 batpoint.onCursorUp()
+        self.__changeSound()
+    def __changeSound(self):
+        def stopSynth():
+            g_scPlayer.set(self.__elSynthSid, 'gate', 0)
+        global g_scPlayer
+        if self.ends[0].getCursorID() != None and self.ends[1].getCursorID() != None:
+            if not(self.__playerActive):
+                self.__playerActive = True
+                #start playback
+                g_scPlayer.set(self.__elSynthSid, 'gate', 1)
+                g_Player.clearInterval(self.__soundStopTimeout)
+        else:
+            if self.__playerActive:
+                self.__playerActive = False
+                #stop playback
+                self.__soundStopTimeout = g_Player.setTimeout(200, stopSynth)
+        # change synth params
+        g_scPlayer.set(self.__elSynthSid, 'fCutoff', self.batline.getLength()/MAX_BAT_LENGTH * 1950 + 50)
+        ypos = (self.ends[0].y+self.ends[1].y)/800.0-1
+        g_scPlayer.set(self.__elSynthSid, 'ypos', ypos)
+
 
 class Ball(Point):
     def __init__(self,posx,posy,game):
@@ -522,6 +598,8 @@ class Game:
         seed()
         self._surfaces=[]
         
+        self.__loadAudio(sponcDir)
+    
         w = self.node.width
         h = self.node.height
         playerWidth=w*(400.0/1260)
@@ -530,10 +608,10 @@ class Game:
         playerright=Player(Box(w-playerWidth,0,playerWidth,h), self)
         self._players = [playerleft, playerright] 
 
-        topline=Line(Point(-10,0), Point(w+10,0))
+        topline=SideLine(Point(-10,0), Point(w+10,0))
         self._surfaces.append(topline)
         
-        bottomline=Line(Point(-10,h), Point(w+10,h))
+        bottomline=SideLine(Point(-10,h), Point(w+10,h))
         self._surfaces.append(bottomline)
 
         leftbound=BoundaryLine(Point(0,-10), Point(0,h+10), playerleft)
@@ -560,6 +638,7 @@ class Game:
         self.curState = None
         self.switchState(self.idleState)
         self.hideMainNodeTimeout = None
+
     def enter(self):
         self.mainNode.active = True
         self.mainNode.sensitive = True
@@ -618,3 +697,19 @@ class Game:
     def hideScore(self):
         scoreDisplay=g_Player.getElementByID("textfield")
         anim.fadeOut(scoreDisplay, 400)
+    
+    def __loadAudio(self, sponcDir):
+        global g_scPlayer, g_sampDict, g_ElSynth
+        server = scsynth.connect()
+        g_scPlayer = scsynth.Player(server)
+        
+        soundDir = '/home/archimedes/libavg/avg_media/mtc/sponc/media/Sound'
+        g_sampDict = {}
+        g_sampDict['ping_left'] = g_scPlayer.allocateSample(soundDir+'/ping_left.wav')
+        g_sampDict['ping_right'] = g_scPlayer.allocateSample(soundDir+'/ping_right.wav')
+        g_sampDict['boundary'] = g_scPlayer.allocateSample(soundDir+'/bande_dry.wav')
+        g_sampDict['goal'] = g_scPlayer.allocateSample(soundDir+'/tor_bekommen.wav')
+
+        g_ElSynth = scsynth.Synth()
+        g_ElSynth.name = 'simpleAnalog'
+
