@@ -27,8 +27,14 @@ from libavg import anim
 from libavg import button
 from random import random, seed
 import sys,os
-from pkaudio import scsynth
 import time
+
+g_AudioEnabled = True
+try:
+    from pkaudio import scsynth
+except ImportError:
+    g_AudioEnabled = False
+
 
 def screenPosToSoundPos(screenPos):
     return ((screenPos.x / 1280.0) * 2 - 1.0, (screenPos.y / 800.0) * 2 - 1.0)
@@ -67,7 +73,10 @@ class SideLine(Line):
             self.__playSound(position)
             return True
     def __playSound(self, position):
-        global g_scPlayer
+        global g_scPlayer, g_AudioEnabled
+        
+        if not g_AudioEnabled:
+            return
 
         spos = screenPosToSoundPos(position)
         g_scPlayer.playSample(g_sampDict['boundary'], spos[0], spos[1])
@@ -88,8 +97,11 @@ class BoundaryLine(Line):
         return False
 
     def __playSound(self, position):
-        global g_scPlayer
+        global g_scPlayer, g_AudioEnabled
 
+        if not g_AudioEnabled:
+            return
+            
         spos = screenPosToSoundPos(position)
         g_scPlayer.playSample(g_sampDict['goal'], spos[0], spos[1])
 
@@ -243,7 +255,10 @@ class BatLine(Line):
                 ball.update()
 
     def __playSound(self, position):
-        global g_scPlayer
+        global g_scPlayer, g_AudioEnabled
+        
+        if not g_AudioEnabled:
+            return
 
         spos = screenPosToSoundPos(position)
         print position, spos
@@ -255,7 +270,7 @@ class BatLine(Line):
 
 class Player:
     def __init__(self,cage, game):
-        global g_scPlayer
+        global g_scPlayer, g_AudioEnabled
         self.cage=cage
         self.score=0
         self.game=game
@@ -265,14 +280,15 @@ class Player:
         self.batline=BatLine("bat.png",self.ends,game)
         self.__playerActive = False
         self.__soundStopTimeout = -1
-        self.__elSynthSid = g_scPlayer.play_rt(g_ElSynth)
-        time.sleep(0.1)
-        if cage.x == 0: # XXX: left player
-            g_scPlayer.set(self.__elSynthSid, 'baseFreq', 69)
-            g_scPlayer.set(self.__elSynthSid, 'xpos', -1)
-        else: # right player
-            g_scPlayer.set(self.__elSynthSid, 'baseFreq', 82)
-            g_scPlayer.set(self.__elSynthSid, 'xpos', 1)
+        if g_AudioEnabled:
+            self.__elSynthSid = g_scPlayer.play_rt(g_ElSynth)
+            time.sleep(0.1)
+            if cage.x == 0: # XXX: left player
+                g_scPlayer.set(self.__elSynthSid, 'baseFreq', 69)
+                g_scPlayer.set(self.__elSynthSid, 'xpos', -1)
+            else: # right player
+                g_scPlayer.set(self.__elSynthSid, 'baseFreq', 82)
+                g_scPlayer.set(self.__elSynthSid, 'xpos', 1)
     def addBatpoints(self,pos1,pos2):
         self.ends=(
                 Batpoint(self, pos1),
@@ -336,6 +352,11 @@ class Player:
                 batpoint.onCursorUp()
         self.__changeSound()
     def __changeSound(self):
+        global g_AudioEnabled
+        
+        if not g_AudioEnabled:
+            return
+        
         def stopSynth():
             g_scPlayer.set(self.__elSynthSid, 'gate', 0)
         global g_scPlayer
@@ -554,7 +575,7 @@ class EndState:
 
 class Game:
     def __init__(self, parentNode, mouseActive):
-        global g_Player
+        global g_Player, g_AudioEnabled
         g_Player = avg.Player.get()
         self.parentNode=parentNode
 
@@ -598,7 +619,8 @@ class Game:
         seed()
         self._surfaces=[]
         
-        self.__loadAudio(sponcDir)
+        if g_AudioEnabled:
+            self.__loadAudio(sponcDir)
     
         w = self.node.width
         h = self.node.height
