@@ -5,47 +5,48 @@ except ImportError:
     g_AudioEnabled = False
 import os, time
 
-class SponcPlayer(scsynth.Player):
-    def __init__(self, server, quadra=False):
-        scsynth.Player.__init__(self, server)
-        self.ldr = scsynth.loader.Loader(server)
-        self.quadra = quadra
-        
-    def allocateSample(self, file):
-        return self.ldr.load(file, True)
-    
-    def allocateSynth(self, synth):
-        sid = self.play_rt(synth)
-        time.sleep(0.1)
-        return sid
-        
-    def playSample(self, bid, xpos=0, ypos=0, loop=False):
-        sid = self.server.synthpool.get()
-
-        if self.quadra:
-            sdef = 'QuadraPlayer'
-        else:
-            sdef = 'StereoPlayer'
+if g_AudioEnabled:
+    class SponcPlayer(scsynth.Player):
+        def __init__(self, server, quadra=False):
+            scsynth.Player.__init__(self, server)
+            self.ldr = scsynth.loader.Loader(server)
+            self.quadra = quadra
             
-        if loop:
-            self.server.sendMsg('/s_new', sdef, sid, 0, 0, 'bufnum', bid, 'xpos', xpos, 'ypos', ypos, 'loop', 1)
+        def allocateSample(self, file):
+            return self.ldr.load(file, True)
+        
+        def allocateSynth(self, synth):
+            sid = self.play_rt(synth)
+            time.sleep(0.1)
             return sid
-        else:
-            self.server.sendMsg('/s_new', sdef, sid, 0, 0, 'bufnum', bid, 'xpos', xpos, 'ypos', ypos)
+            
+        def playSample(self, bid, xpos=0, ypos=0, loop=False):
+            sid = self.server.synthpool.get()
+
+            if self.quadra:
+                sdef = 'QuadraPlayer'
+            else:
+                sdef = 'StereoPlayer'
+                
+            if loop:
+                self.server.sendMsg('/s_new', sdef, sid, 0, 0, 'bufnum', bid, 'xpos', xpos, 'ypos', ypos, 'loop', 1)
+                return sid
+            else:
+                self.server.sendMsg('/s_new', sdef, sid, 0, 0, 'bufnum', bid, 'xpos', xpos, 'ypos', ypos)
 # TODO: asynchronous sid recycling!
 #            self.server.synthpool.recycle(sid)
-            return None
+                return None
 
-    def killSample(self, sid):
-        self.server.sendMsg('/n_free', sid)
-        self.server.synthpool.recycle(sid)
-    
-    def loadSynthDef(self, file):
-        print "Loading: ",file
-        self.server.sendMsg('/d_load', file)
-    
-    def setParam(self, sid, key, value):
-        self.server.sendMsg('/n_set', sid, key, value)
+        def killSample(self, sid):
+            self.server.sendMsg('/n_free', sid)
+            self.server.synthpool.recycle(sid)
+        
+        def loadSynthDef(self, file):
+            print "Loading: ",file
+            self.server.sendMsg('/d_load', file)
+        
+        def setParam(self, sid, key, value):
+            self.server.sendMsg('/n_set', sid, key, value)
 
 class AudioInterface:
     def __init__(self, sponcDir, quadra=False, debug=False):
