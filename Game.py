@@ -21,6 +21,7 @@
 
 from util import in_between, boundary, delNode
 from Geometry import Point, Box, Line, Triangle
+import Audio
 from config import *
 from libavg import avg
 from libavg import anim
@@ -28,12 +29,6 @@ from libavg import button
 from random import random, seed
 import sys,os
 import time
-
-g_AudioEnabled = True
-try:
-    from pkaudio import scsynth
-except ImportError:
-    g_AudioEnabled = False
 
 
 def screenPosToSoundPos(screenPos):
@@ -73,13 +68,10 @@ class SideLine(Line):
             self.__playSound(position)
             return True
     def __playSound(self, position):
-        global g_scPlayer, g_AudioEnabled
+        global g_AudioInterface
         
-        if not g_AudioEnabled:
-            return
-
         spos = screenPosToSoundPos(position)
-        g_scPlayer.playSample(g_sampDict['boundary'], spos[0], spos[1])
+        g_AudioInterface.playSample('boundary', spos[0], spos[1])
 
 class BoundaryLine(Line):
     """line to be put at the left and right play area ends - whenever it's hit,
@@ -97,13 +89,10 @@ class BoundaryLine(Line):
         return False
 
     def __playSound(self, position):
-        global g_scPlayer, g_AudioEnabled
-
-        if not g_AudioEnabled:
-            return
+        global g_AudioInterface
             
         spos = screenPosToSoundPos(position)
-        g_scPlayer.playSample(g_sampDict['goal'], spos[0], spos[1])
+        g_AudioInterface.playSample('goal', spos[0], spos[1])
 
 class Batpoint(Point):
     def __init__(self,player,pos,size=50):
@@ -255,22 +244,19 @@ class BatLine(Line):
                 ball.update()
 
     def __playSound(self, position):
-        global g_scPlayer, g_AudioEnabled
-        
-        if not g_AudioEnabled:
-            return
+        global g_AudioInterface
 
         spos = screenPosToSoundPos(position)
-        print position, spos
+#        print position, spos
         if position.x < 640:
-            g_scPlayer.playSample(g_sampDict['ping_left'], spos[0], spos[1])
+            g_AudioInterface.playSample('ping_left', spos[0], spos[1])
         else:
-            g_scPlayer.playSample(g_sampDict['ping_right'], spos[0], spos[1])
+            g_AudioInterface.playSample('ping_right', spos[0], spos[1])
 
 
 class Player:
     def __init__(self,cage, game):
-        global g_scPlayer, g_AudioEnabled
+        global g_AudioInterface
         self.cage=cage
         self.score=0
         self.game=game
@@ -280,15 +266,11 @@ class Player:
         self.batline=BatLine("bat.png",self.ends,game)
         self.__playerActive = False
         self.__soundStopTimeout = -1
-        if g_AudioEnabled:
-            self.__elSynthSid = g_scPlayer.play_rt(g_ElSynth)
-            time.sleep(0.1)
-            if cage.x == 0: # XXX: left player
-                g_scPlayer.set(self.__elSynthSid, 'baseFreq', 69)
-                g_scPlayer.set(self.__elSynthSid, 'xpos', -1)
-            else: # right player
-                g_scPlayer.set(self.__elSynthSid, 'baseFreq', 82)
-                g_scPlayer.set(self.__elSynthSid, 'xpos', 1)
+
+        if cage.x == 0:
+            self.side = 'left'
+        else:
+            self.side = 'right'
     def addBatpoints(self,pos1,pos2):
         self.ends=(
                 Batpoint(self, pos1),
@@ -352,19 +334,14 @@ class Player:
                 batpoint.onCursorUp()
         self.__changeSound()
     def __changeSound(self):
-        global g_AudioEnabled
-        
-        if not g_AudioEnabled:
-            return
-        
         def stopSynth():
-            g_scPlayer.set(self.__elSynthSid, 'gate', 0)
-        global g_scPlayer
+            g_AudioInterface.setStretchParam(self.side, 'gate', 0)
+        global g_AudioInterface
         if self.ends[0].getCursorID() != None and self.ends[1].getCursorID() != None:
             if not(self.__playerActive):
                 self.__playerActive = True
                 #start playback
-                g_scPlayer.set(self.__elSynthSid, 'gate', 1)
+                g_AudioInterface.setStretchParam(self.side, 'gate', 1)
                 g_Player.clearInterval(self.__soundStopTimeout)
         else:
             if self.__playerActive:
@@ -372,9 +349,9 @@ class Player:
                 #stop playback
                 self.__soundStopTimeout = g_Player.setTimeout(200, stopSynth)
         # change synth params
-        g_scPlayer.set(self.__elSynthSid, 'fCutoff', self.batline.getLength()/MAX_BAT_LENGTH * 1950 + 50)
+        g_AudioInterface.setStretchParam(self.side, 'fCutoff', self.batline.getLength()/MAX_BAT_LENGTH * 1950 + 50)
         ypos = (self.ends[0].y+self.ends[1].y)/800.0-1
-        g_scPlayer.set(self.__elSynthSid, 'ypos', ypos)
+        g_AudioInterface.setStretchParam(self.side, 'ypos', ypos)
 
 
 class Ball(Point):
@@ -575,7 +552,7 @@ class EndState:
 
 class Game:
     def __init__(self, parentNode, mouseActive):
-        global g_Player, g_AudioEnabled
+        global g_Player, g_AudioInterface
         g_Player = avg.Player.get()
         self.parentNode=parentNode
 
@@ -614,13 +591,19 @@ class Game:
         if sponcDir != None:
             sponcDir += "/media"
             self.mainNode.mediadir = sponcDir
+        else:
+            sponcDir = '.'
         parentNode.insertChild(self.mainNode, 0)
         self.node = g_Player.getElementByID("cage")
         seed()
         self._surfaces=[]
         
-        if g_AudioEnabled:
-            self.__loadAudio(sponcDir)
+        # Check if quadraphonic system is available
+        if os.getenv("MTT_DEPLOY"):
+            quadra = True
+        else:
+            quadra = False
+        g_AudioInterface = Audio.AudioInterface(sponcDir, quadra)
     
         w = self.node.width
         h = self.node.height
@@ -720,18 +703,4 @@ class Game:
         scoreDisplay=g_Player.getElementByID("textfield")
         anim.fadeOut(scoreDisplay, 400)
     
-    def __loadAudio(self, sponcDir):
-        global g_scPlayer, g_sampDict, g_ElSynth
-        server = scsynth.connect()
-        g_scPlayer = scsynth.Player(server)
-        
-        soundDir = '/home/archimedes/libavg/avg_media/mtc/sponc/media/Sound'
-        g_sampDict = {}
-        g_sampDict['ping_left'] = g_scPlayer.allocateSample(soundDir+'/ping_left.wav')
-        g_sampDict['ping_right'] = g_scPlayer.allocateSample(soundDir+'/ping_right.wav')
-        g_sampDict['boundary'] = g_scPlayer.allocateSample(soundDir+'/bande_dry.wav')
-        g_sampDict['goal'] = g_scPlayer.allocateSample(soundDir+'/tor_bekommen.wav')
-
-        g_ElSynth = scsynth.Synth()
-        g_ElSynth.name = 'simpleAnalog'
 
