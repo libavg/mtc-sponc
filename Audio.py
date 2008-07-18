@@ -79,7 +79,7 @@ class AudioInterface:
             print "AUDIO: Audio subsystem not available"
             return
         
-        self.__soundDir = os.path.abspath(sponcDir+'/media/Sound')
+        self.__soundDir = os.path.abspath(sponcDir+'/Sound')
 
         self.__server = scsynth.connect()
         
@@ -117,6 +117,7 @@ class AudioInterface:
         self.__rightSynthSID = self.__scPlayer.allocateSynth(self.__rightSynth)
         
         self.setStretchParam('left', 'baseFreq', 69)
+        self.setStretchParam('right', 'baseFreq', 82)
         self.setStretchParam('left', 'xpos', -1)
         self.setStretchParam('right', 'xpos', 1)
         
