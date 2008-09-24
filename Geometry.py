@@ -51,7 +51,19 @@ class Point:
         return Point(x,y)
     def __mul__(self,other):
         """computate dot product"""
-        return self.x*other.x+self.y*other.y
+        if isinstance(other, Point):
+            return self.x*other.x+self.y*other.y
+        elif isinstance(other, int):
+            return Point(self.x*other, self.y*other)
+        else:
+            raise Exception
+    def __rmul__(self, other):
+        return self * other
+    def __add__(self,other):
+        if isinstance(other, Point):
+            return Point(self.x+other.x,self.y+other.y)
+        else:
+            raise Exception
 
 class Line:
     def __init__(self,p1,p2):

@@ -235,10 +235,15 @@ class BatLine(Line):
                 ball.direction=newdir
                 ball.updateNext()
                 newbat=Line(F,N)
-                newpos=newbat.collide(moveline)
+                movevect = Point(ball.nextx, ball.nexty) - ball
+                futurepos = ball+100*movevect
+                ballmove = Line(ball, futurepos)
+                newpos=newbat.collide(ballmove)
 #               print "%s and %s collide at %s" % (newbat,moveline,newpos)
                 if(newpos): #XXX
                     ball.goto(newpos.x,newpos.y)
+                else:
+                    print "warning: no newpos!"
                 Clash(self.game, ball)
                 ball.hitSpeedup(self.getLength()/(MAX_BAT_LENGTH*2))
                 ball.update()
