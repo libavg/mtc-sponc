@@ -19,20 +19,22 @@
 
 
 
+import sys
+import os
+import time
+import math
+from random import random, seed
+
+from libavg import avg, anim, button
+
 from util import in_between, boundary, delNode
 from Geometry import Point, Box, Line, Triangle
 import Audio
-from config import *
-from libavg import avg
-from libavg import anim
-from libavg import button
-from random import random, seed
-import sys,os
-import time
+import config
 
 
 def screenPosToSoundPos(screenPos):
-    return ((screenPos.x / 1280.0) * 2 - 1.0, (screenPos.y / 800.0) * 2 - 1.0)
+    return ((screenPos.x / config.RESOLUTION.x) * 2 - 1.0, (screenPos.y / config.RESOLUTION.y) * 2 - 1.0)
 
 
 class Clash(Point):
@@ -102,7 +104,7 @@ class Batpoint(Point):
         self.size=size
         self.x=pos.x
         self.y=pos.y
-        self.anim=anim.ContinuousAnim(self.node,"angle",0,FINGER_ROT_SPEED,False)
+        self.anim=anim.ContinuousAnim(self.node,"angle",0,config.FINGER_ROT_SPEED,False)
         player.game.addNode(self.node)
         self.updateNode()
 
@@ -197,15 +199,15 @@ class BatLine(Line):
         self.node.angle=self.getNormal()
 
     def getWidth(self):
-        return (MAX_BAT_LENGTH-self.getLength())/10.0
+        return (config.MAX_BAT_LENGTH-self.getLength())/10.0
 
     def isHard(self):
-        return self.getLength()<=MAX_BAT_LENGTH
+        return self.getLength()<=config.MAX_BAT_LENGTH
     
     def onClash(self,object,position):
         if self.isHard():
             Clash(self.game, position)
-            object.hitSpeedup(self.getLength()/MAX_BAT_LENGTH)
+            object.hitSpeedup(self.getLength()/config.MAX_BAT_LENGTH)
             
             self.__playSound(position)
         Line.onClash(self,object,position)
@@ -245,7 +247,7 @@ class BatLine(Line):
                 else:
                     print "warning: no newpos!"
                 Clash(self.game, ball)
-                ball.hitSpeedup(self.getLength()/(MAX_BAT_LENGTH*2))
+                ball.hitSpeedup(self.getLength()/(config.MAX_BAT_LENGTH*2))
                 ball.update()
 
     def __playSound(self, position):
@@ -354,8 +356,9 @@ class Player:
                 #stop playback
                 self.__soundStopTimeout = g_Player.setTimeout(200, stopSynth)
         # change synth params
-        g_AudioInterface.setStretchParam(self.side, 'fCutoff', self.batline.getLength()/MAX_BAT_LENGTH * 1950 + 50)
-        ypos = (self.ends[0].y+self.ends[1].y)/800.0-1
+        g_AudioInterface.setStretchParam(self.side, 'fCutoff',
+                self.batline.getLength()/config.MAX_BAT_LENGTH * 1950 + 50)
+        ypos = (self.ends[0].y+self.ends[1].y)/config.RESOLUTION.y-1
         g_AudioInterface.setStretchParam(self.side, 'ypos', ypos)
 
 
@@ -385,7 +388,7 @@ class Ball(Point):
         if(random()>0.5): # 50% -> shoot left
             self.direction+=math.pi
 
-        self.speed = BASE_BALL_SPEED
+        self.speed = config.BASE_BALL_SPEED
         self.sleepStartTime=g_Player.getFrameTime()
         self.node.opacity=0
         self.goto(self.startx,self.starty)
@@ -417,7 +420,7 @@ class Ball(Point):
         self.nexty=self.y+(math.sin(self.direction)*self.speed)
 
     def update(self):
-        if g_Player.getFrameTime()-self.sleepStartTime < TIME_BETWEEN_BALLS:
+        if g_Player.getFrameTime()-self.sleepStartTime < config.TIME_BETWEEN_BALLS:
             return
         
         #check if the ball collides with bats
@@ -466,7 +469,7 @@ class Ball(Point):
         hitSpeed = 5/factor
         if hitSpeed > 20:
             hitSpeed = 20
-        self.speed=hitSpeed+BASE_BALL_SPEED
+        self.speed=hitSpeed+config.BASE_BALL_SPEED
 
 def sgn(x):
     if x < 0: return -1
@@ -486,12 +489,12 @@ class StartButton(button.Button):
     def __init__(self, onStartClick):
         startNode = g_Player.getElementByID("startbutton")
         startNode.active = True
-        anim.fadeIn(startNode, STATE_FADE_TIME)
+        anim.fadeIn(startNode, config.STATE_FADE_TIME)
         button.Button.__init__(self, startNode, onStartClick)
     def delete(self):
         startNode = g_Player.getElementByID("startbutton")
         startNode.active = False
-        anim.fadeOut(startNode, STATE_FADE_TIME)
+        anim.fadeOut(startNode, config.STATE_FADE_TIME)
         button.Button.delete(self)
         
 
@@ -528,7 +531,7 @@ class PlayingState:
         for x in self.__toUpdate:
             x.update()
         for p in self.game._players:
-            if p.score >=MAX_SCORE:
+            if p.score >=config.MAX_SCORE:
                 self.game.switchState(self.game.endState)
 
 class EndState:
@@ -539,7 +542,7 @@ class EndState:
         self.timeout = g_Player.setTimeout(5000, self.onTimeout)
         winnerField = g_Player.getElementByID("winner")
         self.startButton = StartButton(self.onStartClick)
-        anim.fadeIn(winnerField, STATE_FADE_TIME)
+        anim.fadeIn(winnerField, config.STATE_FADE_TIME)
         if self.game.getWinner() == 0:
             winnerField.x = 0
         else:
@@ -549,7 +552,7 @@ class EndState:
         self.startButton.delete()
         self.startButton = None
         winnerField = g_Player.getElementByID("winner")
-        anim.fadeOut(winnerField, STATE_FADE_TIME)
+        anim.fadeOut(winnerField, config.STATE_FADE_TIME)
     def onTimeout(self):
         self.game.switchState(self.game.idleState)
     def onStartClick(self, event):
@@ -564,14 +567,14 @@ class Game:
         self.mainNode = g_Player.createNode(
         """
         <div active="False" opacity="0">
-            <image width="1280" height="800" href="black.png"/>
-            <image width="1280" height="800" href="background_color.png" opacity="0.5"/>
+            <image width="%(width)u" height="%(height)u" href="black.png"/>
+            <image width="%(width)u" height="%(height)u" href="background_color.png" opacity="0.5"/>
             <image id="background_texture" href="background_texture.png" blendmode="add"
                     opacity="0.1"/>
-            <image href="border.png" opacity="1"/>
+            <image href="border.png" width="%(width)u" height="%(height)u" opacity="1"/>
             <image x="400" href="third_line.png" opacity="1"/>
             <image x="880" href="third_line.png" opacity="1"/>
-            <div id="cage" x="0" y="0" width="1280" height="800">
+            <div id="cage" x="0" y="0" width="%(width)u" height="%(height)u">
                 <div id="textfield" x="0" y="170">
                     <words x="600" y="0" parawidth="80" alignment="center" text=":"
                             font="DS-Digital" size="80" color="f0ead8"/>
@@ -591,7 +594,10 @@ class Game:
                 <image href="start_button_mouseover.png"/>
             </div>
         </div>
-        """)
+        """ % {
+            'width': config.RESOLUTION.x,
+            'height': config.RESOLUTION.y,
+            })
         sponcDir = os.getenv("SPONC_DIR")
         if sponcDir != None:
             sponcDir += "/media"
@@ -687,7 +693,7 @@ class Game:
     def getWinner(self):
         i = 0
         for p in self._players:
-            if p.score==MAX_SCORE:
+            if p.score==config.MAX_SCORE:
                 return i
             i += 1
         bork() # We shouldn't get here.
