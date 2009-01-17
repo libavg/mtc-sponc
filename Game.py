@@ -25,10 +25,10 @@ import time
 import math
 from random import random, seed
 
-from libavg import avg, anim, button
+from libavg import avg, anim, button, Point2D
 
 from util import in_between, boundary, delNode
-from Geometry import Point, Box, Line, Triangle
+from Geometry import Box, Line, Triangle
 import Audio
 import config
 
@@ -37,29 +37,28 @@ def screenPosToSoundPos(screenPos):
     return ((screenPos.x / config.RESOLUTION.x) * 2 - 1.0, (screenPos.y / config.RESOLUTION.y) * 2 - 1.0)
 
 
-class Clash(Point):
+class Clash(Point2D):
     """clash explosion"""
     def __init__(self,game,p):
-        self.node=g_Player.createNode(
+        Point2D.__init__(self, p)
+        self.__node=g_Player.createNode(
                 '<image href="clash.png" />')
-        game.addNode(self.node)
-        (self.x,self.y)=(p.x,p.y)
+        game.addNode(self.__node)
         self.step=0
 
-        self.handler = g_Player.setOnFrameHandler(self.animate)
-        self.animate()
+        self.__onFrameHandler = g_Player.setOnFrameHandler(self.__animate)
 
-    def animate(self):
-        self.node.width=80*math.log(self.step*10+2)
-        self.node.height=self.node.width
-        self.node.x=self.x-self.node.width/2
-        self.node.y=self.y-self.node.height/2
-        self.step+=1
-        if(self.step>3):
-            self.stop()
-    def stop(self):
-        g_Player.clearInterval(self.handler)
-        delNode(self.node)
+    def __animate(self):
+        self.__node.width = 80*math.log(self.step*10+2)
+        self.__node.height = self.__node.width
+        self.__node.pos = self - self.__node.size / 2
+        self.step += 1
+        if self.step > 3:
+            self.__stop()
+
+    def __stop(self):
+        g_Player.clearInterval(self.__onFrameHandler)
+        delNode(self.__node)
 
 class SideLine(Line):
     def __init__(self,p1,p2):
@@ -78,12 +77,13 @@ class SideLine(Line):
 class BoundaryLine(Line):
     """line to be put at the left and right play area ends - whenever it's hit,
     the corresponding player loses a point"""
-    def __init__(self,p1,p2,player):
-        Line.__init__(self,p1,p2)
-        self.player=player
+    def __init__(self, p1, p2, player):
+        Line.__init__(self, p1, p2)
+        self.__player = player
+
     def onClash(self,object,position):
-        if isinstance(object, Ball): 
-            bGameOver = self.player.lose()
+        if isinstance(object, Ball):
+            bGameOver = self.__player.lose()
             object.reset()
             self.__playSound(position)
             return True
@@ -96,14 +96,13 @@ class BoundaryLine(Line):
         spos = screenPosToSoundPos(position)
         g_AudioInterface.playSample('goal', spos[0], spos[1])
 
-class Batpoint(Point):
+class Batpoint(Point2D):
     def __init__(self,player,pos,size=50):
+        Point2D.__init__(self, pos)
         self.player=player
         self.node=g_Player.createNode(
         '<image width="%i" height="%i" href="%s" />' % (size,size,"finger.png"))
         self.size=size
-        self.x=pos.x
-        self.y=pos.y
         self.anim=anim.ContinuousAnim(self.node,"angle",0,config.FINGER_ROT_SPEED,False)
         player.game.addNode(self.node)
         self.updateNode()
@@ -111,40 +110,47 @@ class Batpoint(Point):
         self.dependants=[]
         self.lines=[]
         self.__cursorID = None
+
     def onCursorDown(self, event, pos):
         self.__cursorID = event.cursorid
         self.goto(pos)
+
     def onCursorMove(self, pos):
         self.goto(pos)
+
     def onCursorUp(self):
         self.__cursorID = None
+
     def getCursorID(self):
         return self.__cursorID
+
     def inCage(self,pos):
         return self.player.cage.inbound(pos)
+
     def getOther(self): # XXX
         if(self.player.ends[0]==self):
             other=self.player.ends[1]
         else:
             other=self.player.ends[0]
         return other
-    def getNewPos(self,pos):
-        p=self.inCage(pos)
-        return p
+
     def addDependant(self,dep):
         self.dependants.append(dep)
+
     def addLine(self,line):
         """add a line connected to this batpoint"""
         self.lines.append(line)
+
     def goto(self,pos):
         """reposition batpoint: new position (x,y) marks the middle of the new
         batpoint"""
-        new=self.getNewPos(pos)
+        new=self.inCage(pos)
     
         if self.player.batline.isHard():
             self.moveBounce(new)
 
-        (self.x,self.y)=(new.x,new.y)
+        self.x, self.y = new
+
         self.updateNode()
         self.updateDependants()
 
@@ -159,8 +165,7 @@ class Batpoint(Point):
             line.moveBounce(self,new)
 
     def updateNode(self):
-        self.node.x=self.x-self.size/2
-        self.node.y=self.y-self.size/2
+        self.node.pos = self - self.node.size/2
 
 class BatLine(Line):
     def __init__(self,gfxhref,ends,game):
@@ -237,7 +242,7 @@ class BatLine(Line):
                 ball.direction=newdir
                 ball.updateNext()
                 newbat=Line(F,N)
-                movevect = Point(ball.nextx, ball.nexty) - ball
+                movevect = Point2D(ball.nextx, ball.nexty) - ball
                 futurepos = ball+100*movevect
                 ballmove = Line(ball, futurepos)
                 newpos=newbat.collide(ballmove)
@@ -269,7 +274,7 @@ class Player:
         self.game=game
         
         xpos=cage.x+cage.width/2
-        self.addBatpoints(Point(xpos,cage.height*1/3),Point(xpos,cage.height*2/3))
+        self.addBatpoints(Point2D(xpos,cage.height*1/3),Point2D(xpos,cage.height*2/3))
         self.batline=BatLine("bat.png",self.ends,game)
         self.__playerActive = False
         self.__soundStopTimeout = -1
@@ -278,11 +283,13 @@ class Player:
             self.side = 'left'
         else:
             self.side = 'right'
+
     def addBatpoints(self,pos1,pos2):
         self.ends=(
                 Batpoint(self, pos1),
                 Batpoint(self, pos2)
                 )
+
     def lose(self):
         self.game.adjust_score(self)
     def adjustCursorPos(self, event):
@@ -299,9 +306,9 @@ class Player:
                 else:
                     y = event.y+event.majoraxis[1]*4
                 x = event.x+abs(event.majoraxis[0]*4)
-            return Point(x,y)
+            return Point2D(x,y)
         else:
-            return Point(event.x, event.y)
+            return Point2D(event.x, event.y)
     def release(self):
         for batpoint in self.ends:
             batpoint.onCursorUp()
@@ -362,8 +369,9 @@ class Player:
         g_AudioInterface.setStretchParam(self.side, 'ypos', ypos)
 
 
-class Ball(Point):
+class Ball(Point2D):
     def __init__(self,posx,posy,game):
+        Point2D.__init__(self, 0, 0)
         self.startx=posx
         self.starty=posy
         self.game = game
@@ -380,8 +388,10 @@ class Ball(Point):
         game.addNode(balldiv)
         self.radius = img.width/2.0
         return balldiv
+
     def stop(self):
         delNode(self.node)
+
     def reset(self):
         self.direction=random()*2.0-1 # from -1.0 to 1.0
         self.direction*=math.pi/5
@@ -397,11 +407,11 @@ class Ball(Point):
     def goto(self,x,y):
         if(x<-100 or x>self.game.node.width+100):
             print ("BUG! ball out of horizontal bounds: %s, next %s, old next %s speed %f!" 
-                    % (self,Point(x,y),Point(self.nextx,self.nexty),self.speed))
+                    % (self,Point2D(x,y),Point2D(self.nextx,self.nexty),self.speed))
             sys.exit()
         if(y<-100 or y>self.game.node.height+100):
             print ("BUG! ball out of vertical bounds: %s, next %s, old next %s speed %f!" 
-                    % (self,Point(x,y),Point(self.nextx,self.nexty),self.speed))
+                    % (self,Point2D(x,y),Point2D(self.nextx,self.nexty),self.speed))
             sys.exit()
         self.x=x
         self.y=y
@@ -435,7 +445,7 @@ class Ball(Point):
 
     def trybounce(self,line):
         self.updateNext()
-        moveline=Line(self, Point(self.nextx,self.nexty))
+        moveline=Line(self, Point2D(self.nextx,self.nexty))
         intersection=moveline.clash(line)
 
         if(intersection):
@@ -450,7 +460,7 @@ class Ball(Point):
         return False
 
     def dobounce(self,line):
-        moveline=Line(self, Point(self.nextx,self.nexty))
+        moveline=Line(self, Point2D(self.nextx,self.nexty))
         intersection=moveline.collide(line) # lines do not HAVE to intersect!
         if not intersection:
             print "lines are parallel"
@@ -547,14 +557,17 @@ class EndState:
             winnerField.x = 0
         else:
             winnerField.x = 880
+
     def leave(self):
         g_Player.clearInterval(self.timeout)
         self.startButton.delete()
         self.startButton = None
         winnerField = g_Player.getElementByID("winner")
         anim.fadeOut(winnerField, config.STATE_FADE_TIME)
+
     def onTimeout(self):
         self.game.switchState(self.game.idleState)
+
     def onStartClick(self, event):
         self.game.switchState(self.game.playingState)
 
@@ -624,16 +637,16 @@ class Game:
         playerright=Player(Box(w-playerWidth,0,playerWidth,h), self)
         self._players = [playerleft, playerright] 
 
-        topline=SideLine(Point(-10,0), Point(w+10,0))
+        topline=SideLine(Point2D(-10,0), Point2D(w+10,0))
         self._surfaces.append(topline)
         
-        bottomline=SideLine(Point(-10,h), Point(w+10,h))
+        bottomline=SideLine(Point2D(-10,h), Point2D(w+10,h))
         self._surfaces.append(bottomline)
 
-        leftbound=BoundaryLine(Point(0,-10), Point(0,h+10), playerleft)
+        leftbound=BoundaryLine(Point2D(0,-10), Point2D(0,h+10), playerleft)
         self._surfaces.append(leftbound)
 
-        rightbound=BoundaryLine(Point(w,-10), Point(w,h+10), playerright)
+        rightbound=BoundaryLine(Point2D(w,-10), Point2D(w,h+10), playerright)
         self._surfaces.append(rightbound)
 
         if mouseActive:
@@ -661,6 +674,7 @@ class Game:
         anim.fadeIn(self.mainNode,400,1.0)
         if self.hideMainNodeTimeout:
             g_Player.clearInterval(self.hideMainNodeTimeout)
+
     def leave(self):
         def hideMainNode():
             self.mainNode.opacity=0
@@ -671,36 +685,44 @@ class Game:
             player.release()
         self.mainNode.sensitive = False
         self.hideMainNodeTimeout = g_Player.setTimeout(400, hideMainNode)
+
     def switchState(self, newState):
         if self.curState != None:
             self.curState.leave()
         self.curState = newState
         newState.enter()
+
     def getSurfaces(self):
         return self._surfaces
+
     def addSurface(self, surface):
         self._surfaces.append(surface)
+
     def onCursorEvent(self, event):
         for player in self._players:
             player.onCursorEvent(event)
+
     def addNode(self, node):
         self.node.appendChild(node)
+
     def adjust_score(self, loser):
         for p in self._players:
             if p != loser:
                 p.score+=1
         self.showScore()
+
     def getWinner(self):
         i = 0
-        for p in self._players:
-            if p.score==config.MAX_SCORE:
+        for i, p in enumerate(self._players):
+            if p.score == config.MAX_SCORE:
                 return i
-            i += 1
         bork() # We shouldn't get here.
+
     def resetScores(self):
         for p in self._players:
             p.score = 0
         self.showScore()
+
     def showScore(self):
         g_Player.getElementByID("leftplayerscore").text = str(self._players[0].score)
         g_Player.getElementByID("rightplayerscore").text = str(self._players[1].score)
@@ -710,6 +732,7 @@ class Game:
         background=g_Player.getElementByID("background_texture")
         anim.LinearAnim(background, "opacity", 400, 0.1, 0.3, False,
             lambda: anim.LinearAnim(background, "opacity", 400, 0.3, 0.1))
+
     def hideScore(self):
         scoreDisplay=g_Player.getElementByID("textfield")
         anim.fadeOut(scoreDisplay, 400)

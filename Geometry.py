@@ -19,6 +19,7 @@
 
 import math
 from util import in_between, boundary
+from libavg import Point2D
 
 class Box:
     def __init__(self,x,y,width,height):
@@ -30,40 +31,11 @@ class Box:
         """find closest position inside of cage for point p"""
         newx=boundary(p.x,self.x, self.x+self.width)
         newy=boundary(p.y,self.y, self.y+self.height)
-        return Point(newx,newy)
+        return Point2D(newx,newy)
     def contains(self,p):
         """find out if a point is inside the cage"""
         return (in_between(p.x,self.x,self.x+self.width)
                 and in_between(p.y,self.y,self.y+self.height))
-        
-
-
-class Point:
-    def __init__(self,x,y):
-        self.x=x
-        self.y=y
-    def __str__(self):
-        return "(%u|%u)" % (self.x,self.y)
-    def __sub__(self,other):
-        """vector subtraction"""
-        x=self.x-other.x
-        y=self.y-other.y
-        return Point(x,y)
-    def __mul__(self,other):
-        """computate dot product"""
-        if isinstance(other, Point):
-            return self.x*other.x+self.y*other.y
-        elif isinstance(other, int):
-            return Point(self.x*other, self.y*other)
-        else:
-            raise Exception
-    def __rmul__(self, other):
-        return self * other
-    def __add__(self,other):
-        if isinstance(other, Point):
-            return Point(self.x+other.x,self.y+other.y)
-        else:
-            raise Exception
 
 class Line:
     def __init__(self,p1,p2):
@@ -116,7 +88,7 @@ class Line:
         s=(a*d+f*c-b*c-e*d)/dem
         x=e+s*g
         y=f+s*h
-        return Point(x,y)
+        return Point2D(x,y)
 
     def clash(self,other):
         """compare 2 lines segments, return cutpoint if they cut"""
@@ -138,8 +110,9 @@ class Line:
         return False
         
     def getLength(self):
-        p1=self.ends[0]
-        p2=self.ends[1]
+        p1 = self.ends[0]
+        p2 = self.ends[1]
+        a=p1.x
         return math.sqrt((p2.x-p1.x)**2+(p2.y-p1.y)**2)
 
     def isHard(self):
