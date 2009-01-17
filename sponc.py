@@ -22,26 +22,37 @@
 from libavg import avg
 
 import Game
-from config import *
+#from config import *
+import config
 
 global game
 
+def onKey(event):
+    global g_tracker
+    if event.keystring=='h':
+        print "resetting history"
+        g_tracker.resetHistory()
+    elif event.keystring=='d':
+        fingers = avg.Player.get().getElementByID('fingers')
+        fingers.opacity = 1 - fingers.opacity
+
 def main():
+    global g_tracker
     def myinit():
-        Tracker.setDebugImages(True, True)
+        g_tracker.setDebugImages(True, True)
         game = Game.Game(avgPlayer.getElementByID("main"), True)
         game.enter()
 
     def showTrackerImage():
-        Bitmap = Tracker.getImage(avg.IMG_FINGERS)
+        Bitmap = g_tracker.getImage(avg.IMG_FINGERS)
         Node = avgPlayer.getElementByID("fingers")
         Node.setBitmap(Bitmap)
         Node.width=1280
         Node.height=800
-        Grid = Node.getOrigVertexCoords()
-        Grid = [ [ (pos[0], 1-pos[1]) for pos in line ] for line in Grid]
-        Node.setWarpedVertexCoords(Grid)
-    avgPlayer = avg.Player()
+        #Grid = Node.getOrigVertexCoords()
+        #Grid = [ [ (pos[0], 1-pos[1]) for pos in line ] for line in Grid]
+        #Node.setWarpedVertexCoords(Grid)
+    avgPlayer = avg.Player.get()
     Log = avg.Logger.get()
     Log.setCategories(
             Log.APP |
@@ -56,16 +67,22 @@ def main():
     #       Log.EVENTS2  |
     0)
     
-#    avgPlayer.setResolution(1, 0, 0, 24)
     avgPlayer.loadFile("sponc.avg")
-
-    Tracker = avgPlayer.addTracker("avgtrackerrc")
+    avgPlayer.showCursor(False)
+    avgPlayer.setResolution(
+            True, # fullscreen
+            int(config.RESOLUTION[0]), # width
+            int(config.RESOLUTION[1]), # height
+            0 # color depth
+            )
+    g_tracker = avgPlayer.addTracker("avgtrackerrc")
     avgPlayer.setVBlankFramerate(1)
 
     # some operations fail when the Player ain't
     # running yet, so:
     avgPlayer.setTimeout(0,myinit)
     avgPlayer.setOnFrameHandler(showTrackerImage)
+    avgPlayer.getRootNode().setEventHandler(avg.KEYDOWN, avg.NONE, onKey)
     avgPlayer.play()
 
 main()
