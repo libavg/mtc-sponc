@@ -39,21 +39,21 @@ class Box:
 
 class Line:
     def __init__(self,p1,p2):
-        self.ends=(p1,p2)
+        self.ends = Point2D(p1), Point2D(p2)
+
     def __str__(self):
         return "%s-%s" % self.ends
+
     def getAngle(self):
-        hyp=self.getLength()
-        if(hyp==0):
-            return 0 # avoid division by zero -> value doesnt matter cause there
-                     # is no real line
-        kath=self.ends[1].y-self.ends[0].y
-        x=math.asin(kath/hyp)
-        if (self.ends[0].x>self.ends[1].x):
-            x=math.pi-x
-        return x
+        vec = self.ends[1] - self.ends[0]
+        res = math.atan2(vec.y, vec.x)
+        if res < 0:
+            res += math.pi * 2
+        return res
+
     def getNormal(self):
         return self.getAngle()+math.pi/2
+
     def collide(self,other):
         """
         compare 2 lines - when they cut, return cut point, else
@@ -108,11 +108,10 @@ class Line:
             return p
 
         return False
-        
+
     def getLength(self):
         p1 = self.ends[0]
         p2 = self.ends[1]
-        a=p1.x
         return math.sqrt((p2.x-p1.x)**2+(p2.y-p1.y)**2)
 
     def isHard(self):
