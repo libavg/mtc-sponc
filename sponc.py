@@ -47,8 +47,7 @@ def main():
         Bitmap = g_tracker.getImage(avg.IMG_FINGERS)
         Node = avgPlayer.getElementByID("fingers")
         Node.setBitmap(Bitmap)
-        Node.width=1280
-        Node.height=800
+        Node.size = config.RESOLUTION
         #Grid = Node.getOrigVertexCoords()
         #Grid = [ [ (pos[0], 1-pos[1]) for pos in line ] for line in Grid]
         #Node.setWarpedVertexCoords(Grid)
