@@ -39,13 +39,14 @@ def screenPosToSoundPos(screenPos):
 
 class Clash(Point2D):
     """clash explosion"""
-    def __init__(self,game,p):
-        Point2D.__init__(self, p)
-        self.__node=g_Player.createNode(
-                '<image href="clash.png" />')
+    def __init__(self,game, pos):
+        Point2D.__init__(self, pos)
+        self.__node=g_Player.createNode('image', {
+            'href': 'clash.png',
+            })
+        self.__node.pos = pos
         game.addNode(self.__node)
         self.step=0
-
         self.__onFrameHandler = g_Player.setOnFrameHandler(self.__animate)
 
     def __animate(self):
