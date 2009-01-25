@@ -111,18 +111,29 @@ class Batpoint(Point2D):
         self.lines=[]
         self.__cursorID = None
 
-    def onCursorDown(self, event, pos):
+    def onCursorDown(self, event):
         self.__cursorID = event.cursorid
-        self.goto(pos)
+        self.node.setEventHandler(avg.CURSORMOTION, avg.TOUCH|avg.MOUSE, self.onCursorMotion)
+        self.node.setEventHandler(avg.CURSORUP, avg.TOUCH|avg.MOUSE, self.onCursorUp)
+        self.node.setEventCapture(event.cursorid)
+        self.goto(event.pos)
+        self.player.changeSound()
 
-    def onCursorMove(self, pos):
-        self.goto(pos)
+    def onCursorMotion(self, event):
+        if event.cursorid != self.__cursorID:
+            return
+        self.goto(event.pos)
+        self.player.changeSound()
 
-    def onCursorUp(self):
+    def onCursorUp(self, event):
+        if event.cursorid != self.__cursorID:
+            return
+        self.node.releaseEventCapture(self.__cursorID)
         self.__cursorID = None
+        self.player.changeSound()
 
-    def getCursorID(self):
-        return self.__cursorID
+    def isTouched(self):
+        return self.__cursorID is not None
 
     def inCage(self,pos):
         return self.player.cage.inbound(pos)
@@ -292,66 +303,29 @@ class Player:
 
     def lose(self):
         self.game.adjust_score(self)
-    def adjustCursorPos(self, event):
-        if event.source == avg.TRACK:
-            if event.x > 640:
-                if event.majoraxis[0]>0:
-                    y = event.y+event.majoraxis[1]*4
-                else:
-                    y = event.y-event.majoraxis[1]*4
-                x = event.x-abs(event.majoraxis[0]*4)
-            else:
-                if event.majoraxis[0]>0:
-                    y = event.y-event.majoraxis[1]*4
-                else:
-                    y = event.y+event.majoraxis[1]*4
-                x = event.x+abs(event.majoraxis[0]*4)
-            return Point2D(x,y)
-        else:
-            return Point2D(event.x, event.y)
     def release(self):
         for batpoint in self.ends:
             batpoint.onCursorUp()
         self.__changeSound()
-    def onCursorEvent(self, event):
-        pos = self.adjustCursorPos(event)
-        if self.cage.contains(pos):
-            if event.type == avg.CURSORDOWN:
-                self.onCursorDown(event, pos)
-            elif event.type == avg.CURSORMOTION:
-                self.onCursorMotion(event, pos)
-        if event.type == avg.CURSORUP:
-            self.onCursorUp(event, pos)
-    def onCursorDown(self, event, pos):
+    def onCursorDown(self, event):
+        if not self.cage.contains(event.pos):
+            return
         mindist = 10000
         curBatpoint = None
         for batpoint in self.ends:
-            dist=math.sqrt((pos.x-batpoint.x)**2+(pos.y-batpoint.y)**2)
-            if batpoint.getCursorID() == None and dist<mindist:
-                mindist=dist
-                curBatpoint=batpoint
-        if curBatpoint:	
-            curBatpoint.onCursorDown(event, pos)
-        self.__changeSound()
-    def onCursorMotion(self, event, pos):
-        bMoved = False
-        for batpoint in self.ends:
-            if batpoint.getCursorID() == event.cursorid:
-                bMoved = True
-                batpoint.onCursorMove(pos)
-        if not(bMoved):
-            self.onCursorDown(event, pos)
-        self.__changeSound()
-    def onCursorUp(self, event, pos):
-        for batpoint in self.ends:
-            if batpoint.getCursorID() == event.cursorid:
-                batpoint.onCursorUp()
+            dist = Line(event.pos, batpoint).getLength()
+            if dist < mindist and not batpoint.isTouched():
+                mindist = dist
+                curBatpoint = batpoint
+        if curBatpoint:
+            curBatpoint.onCursorDown(event)
+    def changeSound(self): # XXX
         self.__changeSound()
     def __changeSound(self):
         def stopSynth():
             g_AudioInterface.setStretchParam(self.side, 'gate', 0)
         global g_AudioInterface
-        if self.ends[0].getCursorID() != None and self.ends[1].getCursorID() != None:
+        if self.ends[0].isTouched() and self.ends[1].isTouched():
             if not(self.__playerActive):
                 self.__playerActive = True
                 #start playback
@@ -408,11 +382,11 @@ class Ball(Point2D):
         if(x<-100 or x>self.game.node.width+100):
             print ("BUG! ball out of horizontal bounds: %s, next %s, old next %s speed %f!" 
                     % (self,Point2D(x,y),Point2D(self.nextx,self.nexty),self.speed))
-            sys.exit()
+            self.reset()
         if(y<-100 or y>self.game.node.height+100):
             print ("BUG! ball out of vertical bounds: %s, next %s, old next %s speed %f!" 
                     % (self,Point2D(x,y),Point2D(self.nextx,self.nexty),self.speed))
-            sys.exit()
+            self.reset()
         self.x=x
         self.y=y
         self.updateNode()
@@ -649,13 +623,7 @@ class Game:
         rightbound=BoundaryLine(Point2D(w,-10), Point2D(w,h+10), playerright)
         self._surfaces.append(rightbound)
 
-        if mouseActive:
-            self.node.setEventHandler(avg.CURSORMOTION, avg.MOUSE, self.onCursorEvent)
-            self.node.setEventHandler(avg.CURSORDOWN, avg.MOUSE, self.onCursorEvent)
-            self.node.setEventHandler(avg.CURSORUP, avg.MOUSE, self.onCursorEvent)
-        self.node.setEventHandler(avg.CURSORMOTION, avg.TOUCH, self.onCursorEvent)
-        self.node.setEventHandler(avg.CURSORDOWN, avg.TOUCH, self.onCursorEvent)
-        self.node.setEventHandler(avg.CURSORUP, avg.TOUCH, self.onCursorEvent)
+        self.node.setEventHandler(avg.CURSORDOWN, avg.TOUCH|avg.MOUSE, self.onCursorDown)
 
         self.__states = []
         self.idleState = IdleState(self)
@@ -698,9 +666,9 @@ class Game:
     def addSurface(self, surface):
         self._surfaces.append(surface)
 
-    def onCursorEvent(self, event):
+    def onCursorDown(self, event):
         for player in self._players:
-            player.onCursorEvent(event)
+            player.onCursorDown(event)
 
     def addNode(self, node):
         self.node.appendChild(node)
