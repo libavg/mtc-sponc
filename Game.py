@@ -616,7 +616,7 @@ class Game:
             sponcDir += "/media"
             self.mainNode.mediadir = sponcDir
         else:
-            sponcDir = '.'
+            sponcDir = 'media'
         parentNode.insertChild(self.mainNode, 0)
         self.node = g_Player.getElementByID("cage")
         seed()
