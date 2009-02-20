@@ -1,0 +1,8 @@
+In order to run sponc, you need to have libavg
+(http://www.libavg.de) installed. Sponc is
+usually updated to work with the svn trunk,
+it might be broken with older versions.
+
+If you have any suggestions, patches or need
+help - or simply want to drop me a note,
+mail mh at sponc dot de
