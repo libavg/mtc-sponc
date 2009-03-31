@@ -129,6 +129,10 @@ class Batpoint(Point2D):
     def onCursorUp(self, event):
         if event.cursorid != self.__cursorID:
             return
+        self.release()
+    def release(self):
+        if not self.__cursorID:
+            return
         self.node.releaseEventCapture(self.__cursorID)
         self.__cursorID = None
         self.player.changeSound()
@@ -306,7 +310,7 @@ class Player:
         self.game.adjust_score(self)
     def release(self):
         for batpoint in self.ends:
-            batpoint.onCursorUp()
+            batpoint.release()
         self.__changeSound()
     def onCursorDown(self, event):
         if not self.cage.contains(event.pos):
