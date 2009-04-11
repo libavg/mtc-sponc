@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<!DOCTYPE avg SYSTEM "../../libavg/doc/avg.dtd">
-<avg id="main" width="1280" height="800" mediadir="media">
-    <image id="fingers" x="0" y="0" width="1280" height="800" angle="3.14159" sensitive="false"/>
-</avg>

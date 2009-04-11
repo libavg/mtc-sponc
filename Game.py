@@ -25,7 +25,8 @@ import time
 import math
 from random import random, seed
 
-from libavg import avg, anim, button, Point2D
+from libavg import avg, anim, button, Point2D, AVGApp
+from libavg.AVGAppUtil import getMediaDir
 
 from util import in_between, boundary, delNode
 from Geometry import Box, Line, Triangle
@@ -33,21 +34,28 @@ import Audio
 import config
 
 
+g_player = avg.Player.get()
+
+def disableExitButton():
+    node = g_player.getElementByID('exitbutton_wrap')
+    node.active = False
+    node.opacity = 0
+
 def screenPosToSoundPos(screenPos):
-    return ((screenPos.x / config.RESOLUTION.x) * 2 - 1.0, (screenPos.y / config.RESOLUTION.y) * 2 - 1.0)
+    return ((screenPos.x / config.resolution.x) * 2 - 1.0, (screenPos.y / config.resolution.y) * 2 - 1.0)
 
 
 class Clash(Point2D):
     """clash explosion"""
     def __init__(self,game, pos):
         Point2D.__init__(self, pos)
-        self.__node=g_Player.createNode('image', {
+        self.__node=g_player.createNode('image', {
             'href': 'clash.png',
             })
         self.__node.pos = pos
         game.addNode(self.__node)
         self.step=0
-        self.__onFrameHandler = g_Player.setOnFrameHandler(self.__animate)
+        self.__onFrameHandler = g_player.setOnFrameHandler(self.__animate)
 
     def __animate(self):
         self.__node.width = 80*math.log(self.step*10+2)
@@ -58,7 +66,7 @@ class Clash(Point2D):
             self.__stop()
 
     def __stop(self):
-        g_Player.clearInterval(self.__onFrameHandler)
+        g_player.clearInterval(self.__onFrameHandler)
         delNode(self.__node)
 
 class SideLine(Line):
@@ -97,11 +105,15 @@ class BoundaryLine(Line):
         spos = screenPosToSoundPos(position)
         g_AudioInterface.playSample('goal', spos[0], spos[1])
 
+def eventPosToCagePos(event):
+    cageNode = g_player.getElementByID('cage')
+    return cageNode.getRelPos(event.pos)
+
 class Batpoint(Point2D):
     def __init__(self,player,pos,size=50):
         Point2D.__init__(self, pos)
         self.player=player
-        self.node=g_Player.createNode(
+        self.node=g_player.createNode(
         '<image width="%i" height="%i" href="%s" />' % (size,size,"finger.png"))
         self.size=size
         self.anim=anim.ContinuousAnim(self.node,"angle",0,config.FINGER_ROT_SPEED,False)
@@ -189,7 +201,7 @@ class BatLine(Line):
         for end in ends:
             end.addDependant(self)
             end.addLine(self)
-        self.node=g_Player.createNode('<image href="%s"/>' % gfxhref)
+        self.node=g_player.createNode('<image href="%s"/>' % gfxhref)
         self.updateNode()
         game.addNode(self.node)
         game.addSurface(self)
@@ -335,16 +347,16 @@ class Player:
                 self.__playerActive = True
                 #start playback
                 g_AudioInterface.setStretchParam(self.side, 'gate', 1)
-                g_Player.clearInterval(self.__soundStopTimeout)
+                g_player.clearInterval(self.__soundStopTimeout)
         else:
             if self.__playerActive:
                 self.__playerActive = False
                 #stop playback
-                self.__soundStopTimeout = g_Player.setTimeout(200, stopSynth)
+                self.__soundStopTimeout = g_player.setTimeout(200, stopSynth)
         # change synth params
         g_AudioInterface.setStretchParam(self.side, 'fCutoff',
                 self.batline.getLength()/config.MAX_BAT_LENGTH * 1950 + 50)
-        ypos = (self.ends[0].y+self.ends[1].y)/config.RESOLUTION.y-1
+        ypos = (self.ends[0].y+self.ends[1].y)/config.resolution.y-1
         g_AudioInterface.setStretchParam(self.side, 'ypos', ypos)
 
 
@@ -359,10 +371,8 @@ class Ball(Point2D):
         self.reset()
 
     def createNode(self,game,x,y):
-        global g_Player
-
-        balldiv=g_Player.createNode('<div x="%i" y="%i"></div>' % (x,y))
-        img = g_Player.createNode('image', {"href":"ball.png"})
+        balldiv=g_player.createNode('<div x="%i" y="%i"></div>' % (x,y))
+        img = g_player.createNode('image', {"href":"ball.png"})
         balldiv.appendChild(img)
         game.addNode(balldiv)
         self.radius = img.width/2.0
@@ -378,7 +388,7 @@ class Ball(Point2D):
             self.direction+=math.pi
 
         self.speed = config.BASE_BALL_SPEED
-        self.sleepStartTime=g_Player.getFrameTime()
+        self.sleepStartTime=g_player.getFrameTime()
         self.node.opacity=0
         self.goto(self.startx,self.starty)
         anim.fadeIn(self.node,1500,1.0)
@@ -409,7 +419,7 @@ class Ball(Point2D):
         self.nexty=self.y+(math.sin(self.direction)*self.speed)
 
     def update(self):
-        if g_Player.getFrameTime()-self.sleepStartTime < config.TIME_BETWEEN_BALLS:
+        if g_player.getFrameTime()-self.sleepStartTime < config.TIME_BETWEEN_BALLS:
             return
         
         #check if the ball collides with bats
@@ -476,15 +486,28 @@ def winkelabstand(a,b):
 
 class StartButton(button.Button):
     def __init__(self, onStartClick):
-        startNode = g_Player.getElementByID("startbutton")
+        startNode = g_player.getElementByID("startbutton")
         startNode.active = True
         anim.fadeIn(startNode, config.STATE_FADE_TIME)
         button.Button.__init__(self, startNode, onStartClick)
     def delete(self):
-        startNode = g_Player.getElementByID("startbutton")
+        startNode = g_player.getElementByID("startbutton")
         startNode.active = False
         anim.fadeOut(startNode, config.STATE_FADE_TIME)
         button.Button.delete(self)
+
+class ExitButton(button.Button):
+    def __init__(self, onStopClick):
+        exitNode = g_player.getElementByID("exitbutton")
+        exitNode.active = True
+        anim.fadeIn(exitNode, config.STATE_FADE_TIME)
+        button.Button.__init__(self, exitNode, onStopClick)
+    def delete(self):
+        exitNode = g_player.getElementByID("exitbutton")
+        exitNode.active = False
+        anim.fadeOut(exitNode, config.STATE_FADE_TIME)
+        button.Button.delete(self)
+        
         
 
 class IdleState:
@@ -494,11 +517,14 @@ class IdleState:
     def enter(self):
         self.game.hideScore()
         self.startButton = StartButton(self.onStartClick)
+        self.exitButton = ExitButton(lambda e:self.game.leave())
     def leave(self):
-        startButton = g_Player.getElementByID("startbutton")
+        startButton = g_player.getElementByID("startbutton")
         startButton.active = False
         self.startButton.delete()
         self.startButton = None
+        self.exitButton.delete()
+        self.exitButton = None
     def onStartClick(self, event):
         self.game.switchState(self.game.playingState)
 
@@ -511,11 +537,11 @@ class PlayingState:
         self.game.resetScores()
         self.ball = Ball(self.node.width/2,self.node.height/2,self.game)
         self.__toUpdate.append(self.ball)
-        self.__onFrameHandler = g_Player.setOnFrameHandler(self.onFrame)
+        self.__onFrameHandler = g_player.setOnFrameHandler(self.onFrame)
     def leave(self):
         self.ball.stop()
         self.ball = None
-        g_Player.clearInterval(self.__onFrameHandler)
+        g_player.clearInterval(self.__onFrameHandler)
     def onFrame(self):
         for x in self.__toUpdate:
             x.update()
@@ -528,9 +554,10 @@ class EndState:
         self.game = game
         self.node = game.node
     def enter(self):
-        self.timeout = g_Player.setTimeout(5000, self.onTimeout)
-        winnerField = g_Player.getElementByID("winner")
+        self.timeout = g_player.setTimeout(5000, self.onTimeout)
+        winnerField = g_player.getElementByID("winner")
         self.startButton = StartButton(self.onStartClick)
+        self.exitButton = ExitButton(lambda e:self.game.leave())
         anim.fadeIn(winnerField, config.STATE_FADE_TIME)
         if self.game.getWinner() == 0:
             winnerField.x = 0
@@ -538,10 +565,12 @@ class EndState:
             winnerField.x = 880
 
     def leave(self):
-        g_Player.clearInterval(self.timeout)
+        g_player.clearInterval(self.timeout)
         self.startButton.delete()
         self.startButton = None
-        winnerField = g_Player.getElementByID("winner")
+        self.exitButton.delete()
+        self.exitButton = None
+        winnerField = g_player.getElementByID("winner")
         anim.fadeOut(winnerField, config.STATE_FADE_TIME)
 
     def onTimeout(self):
@@ -550,23 +579,29 @@ class EndState:
     def onStartClick(self, event):
         self.game.switchState(self.game.playingState)
 
-class Game:
-    def __init__(self, parentNode, mouseActive):
-        global g_Player, g_AudioInterface
-        g_Player = avg.Player.get()
-        self.parentNode=parentNode
+class Game(AVGApp):
+    def __init__(self, parentNode):
+        global g_AudioInterface
+        self.parentNode = parentNode
 
-        self.mainNode = g_Player.createNode(
+        cageWidth = config.resolution.x - 2 * config.SPACING.x
+        cageHeight = config.resolution.y - 2 * config.SPACING.y
+        playerWidth = cageWidth / 3.0
+        
+        dotLine1x = config.resolution.x * 1 / 3
+        dotLine2x = config.resolution.x * 2 / 3
+
+        self.mainNode = g_player.createNode(
         """
-        <div active="False" opacity="0">
+        <div mediadir="%(mediadir)s">
             <image width="%(width)u" height="%(height)u" href="black.png"/>
             <image width="%(width)u" height="%(height)u" href="background_color.png" opacity="0.5"/>
             <image id="background_texture" href="background_texture.png" blendmode="add"
                     opacity="0.1"/>
-            <image href="border.png" width="%(width)u" height="%(height)u" opacity="1"/>
-            <image x="400" href="third_line.png" opacity="1"/>
-            <image x="880" href="third_line.png" opacity="1"/>
-            <div id="cage" x="0" y="0" width="%(width)u" height="%(height)u">
+            <image href="border.png" y="30" width="%(width)u" height="%(cageHeight)u" opacity="1"/>
+            <div id="cage" x="%(cageX)u" y="%(cageY)u" width="%(cageWidth)u" height="%(cageHeight)u">
+                <image x="%(vertline1x)u" href="third_line.png" height="%(cageHeight)u"/>
+                <image x="%(vertline2x)u" href="third_line.png" height="%(cageHeight)u"/>
                 <div id="textfield" x="0" y="170">
                     <words x="600" y="0" parawidth="80" alignment="center" text=":"
                             font="DS-Digital" size="80" color="f0ead8"/>
@@ -585,19 +620,30 @@ class Game:
                 <image href="start_button_mouseover.png"/>
                 <image href="start_button_mouseover.png"/>
             </div>
+            <div id="exitbutton_wrap">
+                <div id="exitbutton" x="535" y="80" active="False" opacity="0">
+                    <image href="exit_button_normal.png"/>
+                    <image href="exit_button_pressed.png"/>
+                    <image href="exit_button_mouseover.png"/>
+                    <image href="exit_button_mouseover.png"/>
+                </div>
+            </div>
+            <div id="eventswallow_right" x="1260" y="0" width="100" height="%(height)u" />
+            <div id="eventswallow_left" x="0" y="0" width="20" height="%(height)u" />
         </div>
         """ % {
-            'width': config.RESOLUTION.x,
-            'height': config.RESOLUTION.y,
+            'mediadir': getMediaDir(__file__),
+            'width': config.resolution.x,
+            'height': config.resolution.y,
+            'cageX': config.SPACING.x,
+            'cageY': config.SPACING.y,
+            'cageWidth': cageWidth,
+            'cageHeight': cageHeight,
+            'vertline1x': playerWidth,
+            'vertline2x': cageWidth - playerWidth,
             })
-        sponcDir = os.getenv("SPONC_DIR")
-        if sponcDir != None:
-            sponcDir += "/media"
-            self.mainNode.mediadir = sponcDir
-        else:
-            sponcDir = 'media'
         parentNode.insertChild(self.mainNode, 0)
-        self.node = g_Player.getElementByID("cage")
+        self.node = g_player.getElementByID("cage")
         seed()
         self._surfaces=[]
         
@@ -606,29 +652,26 @@ class Game:
             quadra = True
         else:
             quadra = False
-        g_AudioInterface = Audio.AudioInterface(sponcDir, quadra)
+        g_AudioInterface = Audio.AudioInterface(quadra)
     
-        w = self.node.width
-        h = self.node.height
-        playerWidth=w*(400.0/1260)
 
-        playerleft=Player(Box(0,0,playerWidth,h),self)
-        playerright=Player(Box(w-playerWidth,0,playerWidth,h), self)
-        self._players = [playerleft, playerright] 
+        playerleft=Player(Box(0,0,playerWidth,cageHeight),self)
+        playerright=Player(Box(cageWidth-playerWidth,0,playerWidth,cageHeight), self)
+        self._players = (playerleft, playerright)
 
-        topline=SideLine(Point2D(-10,0), Point2D(w+10,0))
+        topline=SideLine(Point2D(-10,0), Point2D(cageWidth+10,0))
         self._surfaces.append(topline)
         
-        bottomline=SideLine(Point2D(-10,h), Point2D(w+10,h))
+        bottomline=SideLine(Point2D(-10,cageHeight), Point2D(cageWidth+10,cageHeight))
         self._surfaces.append(bottomline)
 
-        leftbound=BoundaryLine(Point2D(0,-10), Point2D(0,h+10), playerleft)
+        leftbound=BoundaryLine(Point2D(0,-10), Point2D(0,cageHeight+10), playerleft)
         self._surfaces.append(leftbound)
 
-        rightbound=BoundaryLine(Point2D(w,-10), Point2D(w,h+10), playerright)
+        rightbound=BoundaryLine(Point2D(cageWidth,-10), Point2D(cageWidth,cageHeight+10), playerright)
         self._surfaces.append(rightbound)
 
-        self.node.setEventHandler(avg.CURSORDOWN, avg.TOUCH|avg.MOUSE, self.onCursorDown)
+        self.node.setEventHandler(avg.CURSOROVER, avg.TOUCH|avg.MOUSE, self.onCursorDown)
 
         self.__states = []
         self.idleState = IdleState(self)
@@ -641,23 +684,15 @@ class Game:
         self.switchState(self.idleState)
         self.hideMainNodeTimeout = None
 
-    def enter(self):
-        self.mainNode.active = True
-        self.mainNode.sensitive = True
+    def _enter(self):
         anim.fadeIn(self.mainNode,400,1.0)
         if self.hideMainNodeTimeout:
-            g_Player.clearInterval(self.hideMainNodeTimeout)
+            g_player.clearInterval(self.hideMainNodeTimeout)
 
-    def leave(self):
-        def hideMainNode():
-            self.mainNode.opacity=0
-            self.mainNode.active = False
-            self.switchState(self.idleState)
-        self.parentNode.reorderChild(self.parentNode.indexOf(self.mainNode), 0)
+    def _leave(self):
         for player in self._players:
             player.release()
-        self.mainNode.sensitive = False
-        self.hideMainNodeTimeout = g_Player.setTimeout(400, hideMainNode)
+        self.hideMainNodeTimeout = g_player.setTimeout(400, lambda: self.switchState(self.idleState))
 
     def switchState(self, newState):
         if self.curState != None:
@@ -697,17 +732,18 @@ class Game:
         self.showScore()
 
     def showScore(self):
-        g_Player.getElementByID("leftplayerscore").text = str(self._players[0].score)
-        g_Player.getElementByID("rightplayerscore").text = str(self._players[1].score)
-        scoreDisplay=g_Player.getElementByID("textfield")
+        g_player.getElementByID("leftplayerscore").text = str(self._players[0].score)
+        g_player.getElementByID("rightplayerscore").text = str(self._players[1].score)
+        scoreDisplay=g_player.getElementByID("textfield")
         anim.LinearAnim(scoreDisplay, "opacity", 400, 1, 0.3, False,
             lambda: anim.LinearAnim(scoreDisplay, "opacity", 400, 0.3, 1))
-        background=g_Player.getElementByID("background_texture")
+        background=g_player.getElementByID("background_texture")
         anim.LinearAnim(background, "opacity", 400, 0.1, 0.3, False,
             lambda: anim.LinearAnim(background, "opacity", 400, 0.3, 0.1))
 
     def hideScore(self):
-        scoreDisplay=g_Player.getElementByID("textfield")
+        scoreDisplay=g_player.getElementByID("textfield")
         anim.fadeOut(scoreDisplay, 400)
     
+
 
