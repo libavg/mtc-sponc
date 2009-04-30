@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (C) 2007
 #    Martin Heistermann, <mh at lulzmeister dot de>
 #    Tim Grocki, <drogenkonsument at gmail dot com>
@@ -25,7 +26,7 @@ import time
 import math
 from random import random, seed
 
-from libavg import avg, anim, button, Point2D, AVGApp
+from libavg import avg, anim, button, Point2D, AVGApp, AVGMTAppStarter
 from libavg.AVGAppUtil import getMediaDir
 
 from util import in_between, boundary, delNode
@@ -129,13 +130,13 @@ class Batpoint(Point2D):
         self.node.setEventHandler(avg.CURSORMOTION, avg.TOUCH|avg.MOUSE, self.onCursorMotion)
         self.node.setEventHandler(avg.CURSORUP, avg.TOUCH|avg.MOUSE, self.onCursorUp)
         self.node.setEventCapture(event.cursorid)
-        self.goto(event.pos)
+        self.goto(event.pos-config.SPACING)
         self.player.changeSound()
 
     def onCursorMotion(self, event):
         if event.cursorid != self.__cursorID:
             return
-        self.goto(event.pos)
+        self.goto(event.pos-config.SPACING)
         self.player.changeSound()
 
     def onCursorUp(self, event):
@@ -584,8 +585,8 @@ class Game(AVGApp):
         global g_AudioInterface
         self.parentNode = parentNode
 
-        cageWidth = config.resolution.x - 2 * config.SPACING.x
-        cageHeight = config.resolution.y - 2 * config.SPACING.y
+        cageWidth = parentNode.width - 2 * config.SPACING.x
+        cageHeight = parentNode.height - 2 * config.SPACING.y
         playerWidth = cageWidth / 3.0
         
         dotLine1x = config.resolution.x * 1 / 3
@@ -633,8 +634,8 @@ class Game(AVGApp):
         </div>
         """ % {
             'mediadir': getMediaDir(__file__),
-            'width': config.resolution.x,
-            'height': config.resolution.y,
+            'width': parentNode.width,
+            'height': parentNode.height,
             'cageX': config.SPACING.x,
             'cageY': config.SPACING.y,
             'cageWidth': cageWidth,
@@ -746,4 +747,6 @@ class Game(AVGApp):
         anim.fadeOut(scoreDisplay, 400)
     
 
+if __name__ == '__main__':
+    AVGMTAppStarter(appClass = Game, resolution = config.resolution)
 
