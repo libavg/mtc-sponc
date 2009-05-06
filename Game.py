@@ -26,7 +26,7 @@ import time
 import math
 from random import random, seed
 
-from libavg import avg, anim, button, Point2D, AVGApp, AVGMTAppStarter
+from libavg import avg, anim, button, Point2D, AVGApp
 from libavg.AVGAppUtil import getMediaDir
 
 from util import in_between, boundary, delNode
@@ -581,6 +581,7 @@ class EndState:
         self.game.switchState(self.game.playingState)
 
 class Game(AVGApp):
+    multitouch = True
     def __init__(self, parentNode):
         global g_AudioInterface
         self.parentNode = parentNode
@@ -748,5 +749,5 @@ class Game(AVGApp):
     
 
 if __name__ == '__main__':
-    AVGMTAppStarter(appClass = Game, resolution = config.resolution)
+    Game.start(resolution = config.resolution)
 
