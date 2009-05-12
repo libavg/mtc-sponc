@@ -583,11 +583,14 @@ class EndState:
 class Game(AVGApp):
     multitouch = True
     def __init__(self, parentNode):
-        global g_AudioInterface
-        self.parentNode = parentNode
+        avg.Words.addFontDir(getMediaDir(__file__, 'fonts'))
+        super(Game, self).__init__(parentNode)
 
-        cageWidth = parentNode.width - 2 * config.SPACING.x
-        cageHeight = parentNode.height - 2 * config.SPACING.y
+    def init(self):
+        global g_AudioInterface
+
+        cageWidth = self._parentNode.width - 2 * config.SPACING.x
+        cageHeight = self._parentNode.height - 2 * config.SPACING.y
         playerWidth = cageWidth / 3.0
         
         dotLine1x = config.resolution.x * 1 / 3
@@ -635,8 +638,8 @@ class Game(AVGApp):
         </div>
         """ % {
             'mediadir': getMediaDir(__file__),
-            'width': parentNode.width,
-            'height': parentNode.height,
+            'width': self._parentNode.width,
+            'height': self._parentNode.height,
             'cageX': config.SPACING.x,
             'cageY': config.SPACING.y,
             'cageWidth': cageWidth,
@@ -644,7 +647,7 @@ class Game(AVGApp):
             'vertline1x': playerWidth,
             'vertline2x': cageWidth - playerWidth,
             })
-        parentNode.insertChild(self.mainNode, 0)
+        self._parentNode.insertChild(self.mainNode, 0)
         self.node = g_player.getElementByID("cage")
         seed()
         self._surfaces=[]
