@@ -117,7 +117,7 @@ class Batpoint(Point2D):
         self.node=g_player.createNode(
         '<image width="%i" height="%i" href="%s" />' % (size,size,"finger.png"))
         self.size=size
-        self.anim=anim.ContinuousAnim(self.node,"angle",0,config.FINGER_ROT_SPEED,False)
+        anim.ContinuousAnim(self.node,"angle",0,config.FINGER_ROT_SPEED,False).start()
         player.game.addNode(self.node)
         self.updateNode()
 
@@ -392,7 +392,7 @@ class Ball(Point2D):
         self.sleepStartTime=g_player.getFrameTime()
         self.node.opacity=0
         self.goto(self.startx,self.starty)
-        anim.fadeIn(self.node,1500,1.0)
+        anim.fadeIn(self.node,1500,1.0).start()
 
     def goto(self,x,y):
         if(x<-100 or x>self.game.node.width+100):
@@ -489,24 +489,24 @@ class StartButton(button.Button):
     def __init__(self, onStartClick):
         startNode = g_player.getElementByID("startbutton")
         startNode.active = True
-        anim.fadeIn(startNode, config.STATE_FADE_TIME)
+        anim.fadeIn(startNode, config.STATE_FADE_TIME).start()
         button.Button.__init__(self, startNode, onStartClick)
     def delete(self):
         startNode = g_player.getElementByID("startbutton")
         startNode.active = False
-        anim.fadeOut(startNode, config.STATE_FADE_TIME)
+        anim.fadeOut(startNode, config.STATE_FADE_TIME).start()
         button.Button.delete(self)
 
 class ExitButton(button.Button):
     def __init__(self, onStopClick):
         exitNode = g_player.getElementByID("exitbutton")
         exitNode.active = True
-        anim.fadeIn(exitNode, config.STATE_FADE_TIME)
+        anim.fadeIn(exitNode, config.STATE_FADE_TIME).start()
         button.Button.__init__(self, exitNode, onStopClick)
     def delete(self):
         exitNode = g_player.getElementByID("exitbutton")
         exitNode.active = False
-        anim.fadeOut(exitNode, config.STATE_FADE_TIME)
+        anim.fadeOut(exitNode, config.STATE_FADE_TIME).start()
         button.Button.delete(self)
         
         
@@ -559,7 +559,7 @@ class EndState:
         winnerField = g_player.getElementByID("winner")
         self.startButton = StartButton(self.onStartClick)
         self.exitButton = ExitButton(lambda e:self.game.leave())
-        anim.fadeIn(winnerField, config.STATE_FADE_TIME)
+        anim.fadeIn(winnerField, config.STATE_FADE_TIME).start()
         if self.game.getWinner() == 0:
             winnerField.x = 0
         else:
@@ -572,7 +572,7 @@ class EndState:
         self.exitButton.delete()
         self.exitButton = None
         winnerField = g_player.getElementByID("winner")
-        anim.fadeOut(winnerField, config.STATE_FADE_TIME)
+        anim.fadeOut(winnerField, config.STATE_FADE_TIME).start()
 
     def onTimeout(self):
         self.game.switchState(self.game.idleState)
@@ -687,7 +687,7 @@ class Game(AVGApp):
         self.hideMainNodeTimeout = None
 
     def _enter(self):
-        anim.fadeIn(self.mainNode,400,1.0)
+        anim.fadeIn(self.mainNode,400,1.0).start()
         if self.hideMainNodeTimeout:
             g_player.clearInterval(self.hideMainNodeTimeout)
 
@@ -738,14 +738,14 @@ class Game(AVGApp):
         g_player.getElementByID("rightplayerscore").text = str(self._players[1].score)
         scoreDisplay=g_player.getElementByID("textfield")
         anim.LinearAnim(scoreDisplay, "opacity", 400, 1, 0.3, False,
-            lambda: anim.LinearAnim(scoreDisplay, "opacity", 400, 0.3, 1))
+            lambda: anim.LinearAnim(scoreDisplay, "opacity", 400, 0.3, 1).start()).start()
         background=g_player.getElementByID("background_texture")
         anim.LinearAnim(background, "opacity", 400, 0.1, 0.3, False,
-            lambda: anim.LinearAnim(background, "opacity", 400, 0.3, 0.1))
+            lambda: anim.LinearAnim(background, "opacity", 400, 0.3, 0.1).start()).start()
 
     def hideScore(self):
         scoreDisplay=g_player.getElementByID("textfield")
-        anim.fadeOut(scoreDisplay, 400)
+        anim.fadeOut(scoreDisplay, 400).start()
     
 
 if __name__ == '__main__':
