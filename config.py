@@ -12,5 +12,5 @@ BASE_BALL_SPEED=10
 TIME_BETWEEN_BALLS=800
 MAX_SCORE=5
 
-resolution = Point2D(1280, 720)
+resolution = Point2D(1280, 800)
 SPACING = Point2D(0,30) # horiz, vert
