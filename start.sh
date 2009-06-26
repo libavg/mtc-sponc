@@ -5,7 +5,7 @@ while [ true ]; do
     killall -9 scsynth
     scsynth -u 57110 -b 1026 2>/dev/null &
     sleep 6
-    ./sponc.py >> sponc.log 2>&1
+    ./Game.py >> sponc.log 2>&1
     killall scsynth
     sleep 1
     killall -9 scsynth
