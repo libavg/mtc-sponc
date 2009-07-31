@@ -608,14 +608,14 @@ class Game(AVGApp):
                 <image x="%(vertline1x)u" href="third_line.png" height="%(cageHeight)u"/>
                 <image x="%(vertline2x)u" href="third_line.png" height="%(cageHeight)u"/>
                 <div id="textfield" x="0" y="170">
-                    <words x="600" y="0" parawidth="80" alignment="center" text=":"
-                            font="DS-Digital" size="80" color="f0ead8"/>
-                    <words id="leftplayerscore" x="450" y="0" parawidth="180" alignment="right" 
-                            text="00" font="DS-Digital" size="80" color="f0ead8"/>
-                    <words id="rightplayerscore" x="650" y="0" parawidth="180" alignment="left"
-                            text="00" font="DS-Digital" size="80" color="f0ead8"/>
-                    <words id="winner" x="0" y="0" parawidth="400" alignment="center"
-                            text="Winner" font="DS-Digital" size="80" color="f0ead8"
+                    <words x="640" y="0" width="80" alignment="center" text=":"
+                            font="DS-Digital" fontsize="80" color="f0ead8"/>
+                    <words id="leftplayerscore" x="650" y="0" width="180" alignment="right" 
+                            text="00" font="DS-Digital" fontsize="80" color="f0ead8"/>
+                    <words id="rightplayerscore" x="650" y="0" width="180" alignment="left"
+                            text="00" font="DS-Digital" fontsize="80" color="f0ead8"/>
+                    <words id="winner" x="200" y="0" width="400" alignment="center"
+                            text="Winner" font="DS-Digital" fontsize="80" color="f0ead8"
                             opacity="0"/>
                 </div>
             </div>
