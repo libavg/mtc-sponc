@@ -610,7 +610,7 @@ class Game(AVGApp):
                 <div id="textfield" x="0" y="170">
                     <words x="640" y="0" width="80" alignment="center" text=":"
                             font="DS-Digital" fontsize="80" color="f0ead8"/>
-                    <words id="leftplayerscore" x="650" y="0" width="180" alignment="right" 
+                    <words id="leftplayerscore" x="630" y="0" width="180" alignment="right" 
                             text="00" font="DS-Digital" fontsize="80" color="f0ead8"/>
                     <words id="rightplayerscore" x="650" y="0" width="180" alignment="left"
                             text="00" font="DS-Digital" fontsize="80" color="f0ead8"/>
