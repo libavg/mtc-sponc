@@ -561,9 +561,9 @@ class EndState:
         self.exitButton = ExitButton(lambda e:self.game.leave())
         anim.fadeIn(winnerField, config.STATE_FADE_TIME).start()
         if self.game.getWinner() == 0:
-            winnerField.x = 0
+            winnerField.x = 200
         else:
-            winnerField.x = 880
+            winnerField.x = 1080
 
     def leave(self):
         g_player.clearInterval(self.timeout)
