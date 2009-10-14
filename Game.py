@@ -26,7 +26,7 @@ import time
 import math
 from random import random, seed
 
-from libavg import avg, anim, button, Point2D, AVGApp
+from libavg import avg, button, Point2D, AVGApp
 from libavg.AVGAppUtil import getMediaDir
 
 from util import in_between, boundary, delNode
@@ -117,7 +117,7 @@ class Batpoint(Point2D):
         self.node=g_player.createNode(
         '<image width="%i" height="%i" href="%s" />' % (size,size,"finger.png"))
         self.size=size
-        anim.ContinuousAnim(self.node,"angle",0,config.FINGER_ROT_SPEED,False).start()
+        avg.ContinuousAnim(self.node,"angle",0,config.FINGER_ROT_SPEED,False).start()
         player.game.addNode(self.node)
         self.updateNode()
 
