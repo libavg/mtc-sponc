@@ -583,7 +583,7 @@ class EndState:
 class Game(AVGApp):
     multitouch = True
     def __init__(self, parentNode):
-        avg.Words.addFontDir(getMediaDir(__file__, 'fonts'))
+        avg.WordsNode.addFontDir(getMediaDir(__file__, 'fonts'))
         super(Game, self).__init__(parentNode)
 
     def init(self):
