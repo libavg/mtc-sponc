@@ -676,7 +676,7 @@ class Game(AVGApp):
         rightbound=BoundaryLine(Point2D(cageWidth,-10), Point2D(cageWidth,cageHeight+10), playerright)
         self._surfaces.append(rightbound)
 
-        self.node.setEventHandler(avg.CURSOROVER, avg.TOUCH|avg.MOUSE, self.onCursorDown)
+        self.node.setEventHandler(avg.CURSORDOWN, avg.TOUCH|avg.MOUSE, self.onCursorDown)
 
         self.__states = []
         self.idleState = IdleState(self)
