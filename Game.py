@@ -111,12 +111,10 @@ def eventPosToCagePos(event):
     return cageNode.getRelPos(event.pos)
 
 class Batpoint(Point2D):
-    def __init__(self,player,pos,size=50):
+    def __init__(self,player,pos):
         Point2D.__init__(self, pos)
         self.player=player
-        self.node=g_player.createNode(
-        '<image width="%i" height="%i" href="%s" />' % (size,size,"finger.png"))
-        self.size=size
+        self.node=g_player.createNode('image', {'href':'finger.png', 'size': config.BATPOINT_SIZE})
         avg.ContinuousAnim(self.node,"angle",0,config.FINGER_ROT_SPEED,False).start()
         player.game.addNode(self.node)
         self.updateNode()
@@ -374,6 +372,7 @@ class Ball(Point2D):
     def createNode(self,game,x,y):
         balldiv=g_player.createNode('<div x="%i" y="%i"></div>' % (x,y))
         img = g_player.createNode('image', {"href":"ball.png"})
+        img.size = config.BALL_SIZE
         balldiv.appendChild(img)
         game.addNode(balldiv)
         self.radius = img.width/2.0
@@ -467,8 +466,9 @@ class Ball(Point2D):
 
     def hitSpeedup(self, factor):
         hitSpeed = 5/factor
-        if hitSpeed > 20:
-            hitSpeed = 20
+        maxSpeedup = config.BASE_BALL_SPEED * 2
+        if hitSpeed > maxSpeedup:
+            hitSpeed = maxSpeedup
         self.speed=hitSpeed+config.BASE_BALL_SPEED
 
 def sgn(x):
@@ -484,6 +484,19 @@ def winkelabstand(a,b):
         d=math.pi*2-d
     d*=sgn(a-b)
     return d
+
+# TODO: Merge *Button into one class (or get rid of it)
+class InfoButton(button.Button):
+    def __init__(self, onClick):
+        node = g_player.getElementByID("infobutton")
+        node.active = True
+        avg.fadeIn(node, config.STATE_FADE_TIME)
+        button.Button.__init__(self, node, onClick)
+    def delete(self):
+        node = g_player.getElementByID("infobutton")
+        node.active = False
+        avg.fadeOut(node, config.STATE_FADE_TIME)
+        button.Button.delete(self)
 
 class StartButton(button.Button):
     def __init__(self, onStartClick):
@@ -508,8 +521,6 @@ class ExitButton(button.Button):
         exitNode.active = False
         avg.fadeOut(exitNode, config.STATE_FADE_TIME)
         button.Button.delete(self)
-        
-        
 
 class IdleState:
     def __init__(self, game):
@@ -517,17 +528,31 @@ class IdleState:
         self.node = game.node
     def enter(self):
         self.game.hideScore()
-        self.startButton = StartButton(self.onStartClick)
+        self.startButton = StartButton(lambda e: self.game.switchState(self.game.playingState))
+        self.infoButton = InfoButton(lambda e: self.game.switchState(self.game.infoState))
         self.exitButton = ExitButton(lambda e:self.game.leave())
     def leave(self):
-        startButton = g_player.getElementByID("startbutton")
-        startButton.active = False
+        self.infoButton.delete()
+        self.infoButton = None
         self.startButton.delete()
         self.startButton = None
         self.exitButton.delete()
         self.exitButton = None
-    def onStartClick(self, event):
-        self.game.switchState(self.game.playingState)
+
+class InfoState:
+    def __init__(self, game):
+        self.game = game
+        self.node = g_player.getElementByID("infoscreen")
+
+    def enter(self):
+        self.game.hideScore()
+        self.node.active = True
+        avg.fadeIn(self.node, config.STATE_FADE_TIME)
+        g_player.setTimeout(3000, lambda: self.game.switchState(self.game.idleState))
+
+    def leave(self):
+        avg.fadeOut(self.node, config.STATE_FADE_TIME)
+        self.node.active = False
 
 class PlayingState:
     def __init__(self, game):
@@ -560,10 +585,14 @@ class EndState:
         self.startButton = StartButton(self.onStartClick)
         self.exitButton = ExitButton(lambda e:self.game.leave())
         avg.fadeIn(winnerField, config.STATE_FADE_TIME)
+        winner_left = g_player.getElementByID("winner_left")
+        winner_right = g_player.getElementByID("winner_right")
         if self.game.getWinner() == 0:
-            winnerField.x = 200
+            winner_left.opacity = 1
+            winner_right.opacity = 0
         else:
-            winnerField.x = 1080
+            winner_left.opacity = 0
+            winner_right.opacity = 1
 
     def leave(self):
         g_player.clearInterval(self.timeout)
@@ -593,9 +622,16 @@ class Game(AVGApp):
         cageHeight = self._parentNode.height - 2 * config.SPACING.y
         playerWidth = cageWidth / 3.0
         
-        dotLine1x = config.resolution.x * 1 / 3
-        dotLine2x = config.resolution.x * 2 / 3
+        dotLine1x = self._parentNode.width * 1 / 3
+        dotLine2x = self._parentNode.width * 2 / 3
 
+        titleSize = Point2D(725, 128) * self._parentNode.width/1280
+        titlePos = Point2D(self._parentNode.width/2 - titleSize.x/2,
+                config.SPACING.y)
+        buttonSize = Point2D(210, 80)
+        if self._parentNode.width < 1280:
+            buttonSize *= self._parentNode.width/1280
+        fontSize = 80
         self.mainNode = g_player.createNode(
         """
         <div mediadir="%(mediadir)s">
@@ -603,38 +639,61 @@ class Game(AVGApp):
             <image width="%(width)u" height="%(height)u" href="background_color.png" opacity="0.5"/>
             <image id="background_texture" href="background_texture.png" blendmode="add"
                     opacity="0.1"/>
-            <image href="border.png" y="30" width="%(width)u" height="%(cageHeight)u" opacity="1"/>
+            <image href="border.png" y="%(cageY)u" width="%(width)u" height="%(cageHeight)u" opacity="1"/>
             <div id="cage" x="%(cageX)u" y="%(cageY)u" width="%(cageWidth)u" height="%(cageHeight)u">
                 <image x="%(vertline1x)u" href="third_line.png" height="%(cageHeight)u"/>
                 <image x="%(vertline2x)u" href="third_line.png" height="%(cageHeight)u"/>
-                <div id="textfield" x="0" y="170">
-                    <words x="640" y="0" width="80" alignment="center" text=":"
-                            font="DS-Digital" fontsize="80" color="f0ead8"/>
-                    <words id="leftplayerscore" x="630" y="0" width="180" alignment="right" 
-                            text="00" font="DS-Digital" fontsize="80" color="f0ead8"/>
-                    <words id="rightplayerscore" x="650" y="0" width="180" alignment="left"
-                            text="00" font="DS-Digital" fontsize="80" color="f0ead8"/>
-                    <words id="winner" x="200" y="0" width="400" alignment="center"
-                            text="Winner" font="DS-Digital" fontsize="80" color="f0ead8"
-                            opacity="0"/>
+                <div id="textfield" x="0" y="%(text_y)u" opacity="0">
+                    <words x="%(mid_x)u" y="0" width="%(fontsize)u" alignment="center" text=":"
+                            font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                    <words id="leftplayerscore" x="%(score_left_x)u" width="180" alignment="right" 
+                            text="00" font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                    <words id="rightplayerscore" x="%(score_right_x)u" width="180" alignment="left"
+                            text="00" font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                    <div id="winner" opacity="0">
+                        <words id="winner_left"  x="%(winnerLeft_x)u"  width="%(playerWidth)u" alignment="center"
+                                text="Winner" font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                        <words id="winner_right" x="%(winnerRight_x)u" width="%(playerWidth)u" alignment="center"
+                                text="Winner" font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                    </div>
                 </div>
             </div>
-            <div id="startbutton" x="535" y="550" active="False" opacity="0">
-                <image href="start_button_normal.png"/>
-                <image href="start_button_pressed.png"/>
-                <image href="start_button_mouseover.png"/>
-                <image href="start_button_mouseover.png"/>
-            </div>
-            <div id="exitbutton_wrap">
-                <div id="exitbutton" x="535" y="80" active="False" opacity="0">
-                    <image href="exit_button_normal.png"/>
-                    <image href="exit_button_pressed.png"/>
-                    <image href="exit_button_mouseover.png"/>
-                    <image href="exit_button_mouseover.png"/>
+            <div id="buttons">
+                <div id="startbutton" x="%(button_x)u" y="%(button_start_y)u" active="False" opacity="0">
+                    <image size="%(button_size)s" href="start_button_normal.png"/>
+                    <image size="%(button_size)s" href="start_button_pressed.png"/>
+                    <image size="%(button_size)s" href="start_button_mouseover.png"/>
+                    <image size="%(button_size)s" href="start_button_mouseover.png"/>
+                </div>
+                <div id="exitbutton_wrap">
+                    <div id="exitbutton" x="%(button_x)u" y="%(button_exit_y)u" active="False" opacity="0">
+                        <image size="%(button_size)s" href="exit_button_normal.png"/>
+                        <image size="%(button_size)s" href="exit_button_pressed.png"/>
+                        <image size="%(button_size)s" href="exit_button_mouseover.png"/>
+                        <image size="%(button_size)s" href="exit_button_mouseover.png"/>
+                    </div>
+                </div>
+                <div id="infobutton" x="%(button_x)u" y="%(button_info_y)u">
+                    <image size="%(button_size)s" href="info_button_normal.png"/>
+                    <image size="%(button_size)s" href="info_button_pressed.png"/>
+                    <image size="%(button_size)s" href="info_button_mouseover.png"/>
+                    <image size="%(button_size)s" href="info_button_mouseover.png"/>
                 </div>
             </div>
-            <div id="eventswallow_right" x="1260" y="0" width="100" height="%(height)u" />
-            <div id="eventswallow_left" x="0" y="0" width="20" height="%(height)u" />
+            <div id="infoscreen" active="False" opacity="0">
+                <image width="%(width)u" height="%(height)u" href="black.png" opacity="0.8" />
+                <image href="title.png" size="%(titleSize)s" pos="%(titlePos)s" />
+                <words x="%(mid_x)u" y="%(text_y)u" width="%(playerWidth)u" alignment="center"
+                            fontsize="%(fontsize_info)u" color="f0ead8">
+                            <b>credits:</b><br />
+                            Martin Heistermann<br />
+                            Tim Grocki<br />
+                            Archimedes GmbH<br />
+                            <br />
+                            <b>source code:</b><br />
+                            http://sponc.de
+                            </words>
+            </div>
         </div>
         """ % {
             'mediadir': getMediaDir(__file__),
@@ -646,6 +705,22 @@ class Game(AVGApp):
             'cageHeight': cageHeight,
             'vertline1x': playerWidth,
             'vertline2x': cageWidth - playerWidth,
+            'button_x': self._parentNode.width/2 - buttonSize.x/2,
+            'button_size': str(buttonSize),
+            'button_start_y': self._parentNode.height/5,
+            'button_info_y':  self._parentNode.height - 4 * (buttonSize.y),
+            'button_exit_y':  self._parentNode.height - 3 * (buttonSize.y),
+            'playerWidth': playerWidth,
+            'text_y': self._parentNode.height/4,
+            'winnerLeft_x': playerWidth/2,
+            'winnerRight_x': cageWidth - playerWidth/2,
+            'mid_x': self._parentNode.width/2,
+            'score_left_x': self._parentNode.width/2 - fontSize/4,
+            'score_right_x': self._parentNode.width/2 + fontSize/4,
+            'fontsize': fontSize,
+            'fontsize_info': fontSize/2,
+            'titleSize': titleSize,
+            'titlePos': titlePos,
             })
         self._parentNode.insertChild(self.mainNode, 0)
         self.node = g_player.getElementByID("cage")
@@ -685,6 +760,8 @@ class Game(AVGApp):
         self.__states.append(self.playingState)
         self.endState = EndState(self)
         self.__states.append(self.endState)
+        self.infoState = InfoState(self)
+        self.__states.append(self.infoState)
         self.curState = None
         self.switchState(self.idleState)
         self.hideMainNodeTimeout = None
@@ -694,7 +771,7 @@ class Game(AVGApp):
         if self.hideMainNodeTimeout:
             g_player.clearInterval(self.hideMainNodeTimeout)
 
-    def _leave(self):
+    def _leave(self): # TODO: should _really_ exit upon exit click, or remove exit button - AVGApp
         for player in self._players:
             player.release()
         self.hideMainNodeTimeout = g_player.setTimeout(400, lambda: self.switchState(self.idleState))
