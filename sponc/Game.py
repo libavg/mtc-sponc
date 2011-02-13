@@ -620,34 +620,43 @@ class SponcApp(gameapp.GameApp):
         """
         <div mediadir="%(mediadir)s">
             <image width="%(width)u" height="%(height)u" href="black.png"/>
-            <image width="%(width)u" height="%(height)u" href="background_color.png" opacity="0.5"/>
+            <image width="%(width)u" height="%(height)u" href="background_color.png"
+                    opacity="0.5"/>
             <image id="background_texture" width="%(width)u" height="%(height)u"
                     href="background_texture.png" blendmode="add" opacity="0.1"/>
-            <image href="border.png" y="%(cageY)u" width="%(width)u" height="%(cageHeight)u" opacity="1"/>
-            <div id="cage" x="%(cageX)u" y="%(cageY)u" width="%(cageWidth)u" height="%(cageHeight)u">
+            <image href="border.png" y="%(cageY)u"
+                    width="%(width)u" height="%(cageHeight)u" opacity="1"/>
+            <div id="cage" x="%(cageX)u" y="%(cageY)u" 
+                    width="%(cageWidth)u" height="%(cageHeight)u">
                 <image x="%(vertline1x)u" href="third_line.png" height="%(cageHeight)u"/>
                 <image x="%(vertline2x)u" href="third_line.png" height="%(cageHeight)u"/>
                 <div id="textfield" x="0" y="%(text_y)u" opacity="0">
-                    <words x="%(mid_x)u" y="0" width="%(fontsize)u" alignment="center" text=":"
-                            font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
-                    <words id="leftplayerscore" x="%(score_left_x)u" width="180" alignment="right" 
-                            text="00" font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
-                    <words id="rightplayerscore" x="%(score_right_x)u" width="180" alignment="left"
-                            text="00" font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                    <words x="%(mid_x)u" y="0" width="%(fontsize)u" alignment="center"
+                            text=":" font="DS-Digital" fontsize="%(fontsize)u" 
+                            color="f0ead8"/>
+                    <words id="leftplayerscore" x="%(score_left_x)u" width="180" 
+                            alignment="right" text="00" font="DS-Digital" 
+                            fontsize="%(fontsize)u" color="f0ead8"/>
+                    <words id="rightplayerscore" x="%(score_right_x)u" width="180"
+                            alignment="left" text="00" font="DS-Digital" 
+                            fontsize="%(fontsize)u" color="f0ead8"/>
                     <div id="winner" opacity="0">
-                        <words id="winner_left"  x="%(winnerLeft_x)u"  width="%(playerWidth)u" alignment="center"
-                                text="Winner" font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
-                        <words id="winner_right" x="%(winnerRight_x)u" width="%(playerWidth)u" alignment="center"
-                                text="Winner" font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                        <words id="winner_left" x="%(winnerLeft_x)u"
+                                width="%(playerWidth)u" alignment="center" text="Winner"
+                                font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                        <words id="winner_right" x="%(winnerRight_x)u"
+                                width="%(playerWidth)u" alignment="center" text="Winner"
+                                font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
                     </div>
                 </div>
             </div>
             <div id="buttons"/>
             <div id="infoscreen" active="False" opacity="0">
-                <image width="%(width)u" height="%(height)u" href="black.png" opacity="0.8" />
+                <image width="%(width)u" height="%(height)u" href="black.png" 
+                        opacity="0.8" />
                 <image href="title.png" size="%(titleSize)s" pos="%(titlePos)s" />
-                <words x="%(mid_x)u" y="%(text_y)u" width="%(playerWidth)u" alignment="center"
-                            fontsize="%(fontsize_info)u" color="f0ead8">
+                <words x="%(mid_x)u" y="%(text_y)u" width="%(playerWidth)u" 
+                        alignment="center" fontsize="%(fontsize_info)u" color="f0ead8">
                             <b>credits:</b><br />
                             Martin Heistermann<br />
                             Tim Grocki<br />
@@ -655,7 +664,7 @@ class SponcApp(gameapp.GameApp):
                             <br />
                             <b>source code:</b><br />
                             http://sponc.de
-                            </words>
+                </words>
             </div>
         </div>
         """ % {
@@ -733,7 +742,8 @@ class SponcApp(gameapp.GameApp):
         if self.hideMainNodeTimeout:
             g_player.clearInterval(self.hideMainNodeTimeout)
 
-    def _leave(self): # TODO: should _really_ exit upon exit click, or remove exit button - AVGApp
+    def _leave(self): 
+        # TODO: should _really_ exit upon exit click, or remove exit button - AVGApp
         for player in self._players:
             player.release()
         self.hideMainNodeTimeout = g_player.setTimeout(400, 
