@@ -14,7 +14,7 @@ setup(
     scripts=['scripts/sponc'],
     package_data={
             'sponc': ['media/*.png', 'media/Sound/*.wav', 'media/Sound/scsyndefs/*',
-                    'fonts/*.ttf'],
+                    'fonts/*'],
     }
 )
 
