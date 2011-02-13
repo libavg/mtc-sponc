@@ -1,9 +1,9 @@
 import os
 
-from Game import Game, disableExitButton
+from Game import Game
 from libavg.AVGAppUtil import getMediaDir, createImagePreviewNode
 
-__all__ = [ 'apps', 'disableExitButton',]
+__all__ = ['apps']
 
 def createPreviewNode(maxSize):
     filename = os.path.join(getMediaDir(__file__), 'preview.png')
