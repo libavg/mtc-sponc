@@ -26,8 +26,9 @@ import time
 import math
 from random import random, seed
 
-from libavg import avg, button, Point2D, AVGApp
+from libavg import avg, Point2D, AVGApp
 from libavg.AVGAppUtil import getMediaDir
+from libavg.ui import button
 
 from util import in_between, boundary, delNode
 from Geometry import Box, Line, Triangle
@@ -485,59 +486,24 @@ def winkelabstand(a,b):
     d*=sgn(a-b)
     return d
 
-# TODO: Merge *Button into one class (or get rid of it)
-class InfoButton(button.Button):
-    def __init__(self, onClick):
-        node = g_player.getElementByID("infobutton")
-        node.active = True
-        avg.fadeIn(node, config.STATE_FADE_TIME)
-        button.Button.__init__(self, node, onClick)
-    def delete(self):
-        node = g_player.getElementByID("infobutton")
-        node.active = False
-        avg.fadeOut(node, config.STATE_FADE_TIME)
-        button.Button.delete(self)
+class Button(button.Button):
 
-class StartButton(button.Button):
-    def __init__(self, onStartClick):
-        startNode = g_player.getElementByID("startbutton")
-        startNode.active = True
-        avg.fadeIn(startNode, config.STATE_FADE_TIME)
-        button.Button.__init__(self, startNode, onStartClick)
-    def delete(self):
-        startNode = g_player.getElementByID("startbutton")
-        startNode.active = False
-        avg.fadeOut(startNode, config.STATE_FADE_TIME)
-        button.Button.delete(self)
-
-class ExitButton(button.Button):
-    def __init__(self, onStopClick):
-        exitNode = g_player.getElementByID("exitbutton")
-        exitNode.active = True
-        avg.fadeIn(exitNode, config.STATE_FADE_TIME)
-        button.Button.__init__(self, exitNode, onStopClick)
-    def delete(self):
-        exitNode = g_player.getElementByID("exitbutton")
-        exitNode.active = False
-        avg.fadeOut(exitNode, config.STATE_FADE_TIME)
-        button.Button.delete(self)
+    def __init__(self, upImage, downImage, **kwargs):
+        upNode = avg.ImageNode(href=upImage)
+        downNode = avg.ImageNode(href=downImage)
+        button.Button.__init__(self, upNode=upNode, downNode=downNode, **kwargs)
+        avg.fadeIn(self, config.STATE_FADE_TIME)
 
 class IdleState:
     def __init__(self, game):
         self.game = game
-        self.node = game.node
+        self.node = g_player.getElementByID("buttons")
     def enter(self):
         self.game.hideScore()
-        self.startButton = StartButton(lambda e: self.game.switchState(self.game.playingState))
-        self.infoButton = InfoButton(lambda e: self.game.switchState(self.game.infoState))
-        self.exitButton = ExitButton(lambda e:self.game.leave())
+        self.game.showButtons(True)
+
     def leave(self):
-        self.infoButton.delete()
-        self.infoButton = None
-        self.startButton.delete()
-        self.startButton = None
-        self.exitButton.delete()
-        self.exitButton = None
+        self.game.showButtons(False)
 
 class InfoState:
     def __init__(self, game):
@@ -582,8 +548,6 @@ class EndState:
     def enter(self):
         self.timeout = g_player.setTimeout(5000, self.onTimeout)
         winnerField = g_player.getElementByID("winner")
-        self.startButton = StartButton(self.onStartClick)
-        self.exitButton = ExitButton(lambda e:self.game.leave())
         avg.fadeIn(winnerField, config.STATE_FADE_TIME)
         winner_left = g_player.getElementByID("winner_left")
         winner_right = g_player.getElementByID("winner_right")
@@ -596,10 +560,6 @@ class EndState:
 
     def leave(self):
         g_player.clearInterval(self.timeout)
-        self.startButton.delete()
-        self.startButton = None
-        self.exitButton.delete()
-        self.exitButton = None
         winnerField = g_player.getElementByID("winner")
         avg.fadeOut(winnerField, config.STATE_FADE_TIME)
 
@@ -628,9 +588,6 @@ class Game(AVGApp):
         titleSize = Point2D(725, 128) * self._parentNode.width/1280
         titlePos = Point2D(self._parentNode.width/2 - titleSize.x/2,
                 config.SPACING.y)
-        buttonSize = Point2D(210, 80)
-        if self._parentNode.width < 1280:
-            buttonSize *= self._parentNode.width/1280
         fontSize = 80
         self.mainNode = g_player.createNode(
         """
@@ -658,28 +615,7 @@ class Game(AVGApp):
                     </div>
                 </div>
             </div>
-            <div id="buttons">
-                <div id="startbutton" x="%(button_x)u" y="%(button_start_y)u" active="False" opacity="0">
-                    <image size="%(button_size)s" href="start_button_normal.png"/>
-                    <image size="%(button_size)s" href="start_button_pressed.png"/>
-                    <image size="%(button_size)s" href="start_button_mouseover.png"/>
-                    <image size="%(button_size)s" href="start_button_mouseover.png"/>
-                </div>
-                <div id="exitbutton_wrap">
-                    <div id="exitbutton" x="%(button_x)u" y="%(button_exit_y)u" active="False" opacity="0">
-                        <image size="%(button_size)s" href="exit_button_normal.png"/>
-                        <image size="%(button_size)s" href="exit_button_pressed.png"/>
-                        <image size="%(button_size)s" href="exit_button_mouseover.png"/>
-                        <image size="%(button_size)s" href="exit_button_mouseover.png"/>
-                    </div>
-                </div>
-                <div id="infobutton" x="%(button_x)u" y="%(button_info_y)u">
-                    <image size="%(button_size)s" href="info_button_normal.png"/>
-                    <image size="%(button_size)s" href="info_button_pressed.png"/>
-                    <image size="%(button_size)s" href="info_button_mouseover.png"/>
-                    <image size="%(button_size)s" href="info_button_mouseover.png"/>
-                </div>
-            </div>
+            <div id="buttons"/>
             <div id="infoscreen" active="False" opacity="0">
                 <image width="%(width)u" height="%(height)u" href="black.png" opacity="0.8" />
                 <image href="title.png" size="%(titleSize)s" pos="%(titlePos)s" />
@@ -705,11 +641,11 @@ class Game(AVGApp):
             'cageHeight': cageHeight,
             'vertline1x': playerWidth,
             'vertline2x': cageWidth - playerWidth,
-            'button_x': self._parentNode.width/2 - buttonSize.x/2,
-            'button_size': str(buttonSize),
-            'button_start_y': self._parentNode.height/5,
-            'button_info_y':  self._parentNode.height - 4 * (buttonSize.y),
-            'button_exit_y':  self._parentNode.height - 3 * (buttonSize.y),
+#            'button_x': self._parentNode.width/2 - buttonSize.x/2,
+#            'button_size': str(buttonSize),
+#            'button_start_y': self._parentNode.height/5,
+#            'button_info_y':  self._parentNode.height - 4 * (buttonSize.y),
+#            'button_exit_y':  self._parentNode.height - 3 * (buttonSize.y),
             'playerWidth': playerWidth,
             'text_y': self._parentNode.height/4,
             'winnerLeft_x': playerWidth/2,
@@ -762,6 +698,9 @@ class Game(AVGApp):
         self.__states.append(self.endState)
         self.infoState = InfoState(self)
         self.__states.append(self.infoState)
+        
+        self.__createButtons()
+
         self.curState = None
         self.switchState(self.idleState)
         self.hideMainNodeTimeout = None
@@ -826,7 +765,39 @@ class Game(AVGApp):
     def hideScore(self):
         scoreDisplay=g_player.getElementByID("textfield")
         avg.fadeOut(scoreDisplay, 400)
-    
+  
+    def showButtons(self, show):
+        self.startButton.active = show
+        self.infoButton.active = show
+        self.exitButton.active = show
+
+    def __createButtons(self):
+        screenSize = self._parentNode.size
+        buttonSize = Point2D(210, 80)
+#        if self._parentNode.width < 1280:
+#            buttonSize *= self._parentNode.width/1280
+        xPos = (screenSize.x-buttonSize.x)/2
+
+        self.startButton = Button(
+                pos=(xPos, screenSize.y/5),
+                upImage="start_button_normal.png",
+                downImage="start_button_pressed.png",
+                clickHandler=lambda e: self.switchState(self.playingState),
+                parent=self.node)
+                
+        self.infoButton = Button(
+                pos=(xPos, screenSize.y-4*buttonSize.y),
+                upImage="info_button_normal.png",
+                downImage="info_button_pressed.png",
+                clickHandler=lambda e: self.switchState(self.infoState),
+                parent=self.node)
+
+        self.exitButton = Button(
+                pos=(xPos, screenSize.y-3*buttonSize.y),
+                upImage="exit_button_normal.png",
+                downImage="exit_button_pressed.png",
+                clickHandler=lambda e: self.leave(),
+                parent=self.node)
 
 if __name__ == '__main__':
     Game.start(resolution = config.resolution)
