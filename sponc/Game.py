@@ -529,6 +529,7 @@ class IdleState:
     def leave(self):
         self.game.showButtons(False)
 
+
 class InfoState:
 
     def __init__(self, game):
@@ -537,13 +538,20 @@ class InfoState:
 
     def enter(self):
         self.game.hideScore()
-        self.node.active = True
+        self.node.sensitive = True
         avg.fadeIn(self.node, config.STATE_FADE_TIME)
-        g_player.setTimeout(3000, lambda: self.game.switchState(self.game.idleState))
+        g_player.setTimeout(20000, self.__back)
+        self.node.connectEventHandler(avg.CURSORDOWN, avg.MOUSE | avg.TOUCH,
+                self, lambda event: self.__back())
 
     def leave(self):
+        self.node.disconnectEventHandler(self)
         avg.fadeOut(self.node, config.STATE_FADE_TIME)
-        self.node.active = False
+        self.node.sensitive = False
+
+    def __back(self):
+        self.game.switchState(self.game.idleState)
+
 
 class PlayingState:
 
@@ -595,6 +603,7 @@ class EndState:
 
     def onStartClick(self, event):
         self.game.switchState(self.game.playingState)
+
 
 class SponcApp(gameapp.GameApp):
     multitouch = True
@@ -651,7 +660,7 @@ class SponcApp(gameapp.GameApp):
                 </div>
             </div>
             <div id="buttons"/>
-            <div id="infoscreen" active="False" opacity="0">
+            <div id="infoscreen" sensitive="False" opacity="0">
                 <image width="%(width)u" height="%(height)u" href="black.png" 
                         opacity="0.8" />
                 <image href="title.png" size="%(titleSize)s" pos="%(titlePos)s" />
