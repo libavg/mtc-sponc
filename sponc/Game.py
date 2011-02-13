@@ -621,8 +621,8 @@ class SponcApp(gameapp.GameApp):
         <div mediadir="%(mediadir)s">
             <image width="%(width)u" height="%(height)u" href="black.png"/>
             <image width="%(width)u" height="%(height)u" href="background_color.png" opacity="0.5"/>
-            <image id="background_texture" href="background_texture.png" blendmode="add"
-                    opacity="0.1"/>
+            <image id="background_texture" width="%(width)u" height="%(height)u"
+                    href="background_texture.png" blendmode="add" opacity="0.1"/>
             <image href="border.png" y="%(cageY)u" width="%(width)u" height="%(cageHeight)u" opacity="1"/>
             <div id="cage" x="%(cageX)u" y="%(cageY)u" width="%(cageWidth)u" height="%(cageHeight)u">
                 <image x="%(vertline1x)u" href="third_line.png" height="%(cageHeight)u"/>
