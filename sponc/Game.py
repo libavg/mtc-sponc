@@ -763,8 +763,6 @@ class SponcApp(gameapp.GameApp):
         # TODO: should _really_ exit upon exit click, or remove exit button - AVGApp
         for player in self._players:
             player.release()
-        self.hideMainNodeTimeout = g_player.setTimeout(400, 
-                lambda: self.switchState(self.idleState))
 
     def switchState(self, newState):
         if self.curState != None:
@@ -847,7 +845,7 @@ class SponcApp(gameapp.GameApp):
                 pos=(xPos, screenSize.y-3*buttonSize.y),
                 upImage="exit_button_normal.png",
                 downImage="exit_button_pressed.png",
-                clickHandler=lambda e: self.leave(),
+                clickHandler=lambda e: self.quit(),
                 parent=self.node)
 
 if __name__ == '__main__':
