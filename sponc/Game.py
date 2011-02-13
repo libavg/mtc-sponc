@@ -26,7 +26,7 @@ import time
 import math
 from random import random, seed
 
-from libavg import avg, Point2D, AVGApp
+from libavg import avg, gameapp, Point2D, AVGApp
 from libavg.AVGAppUtil import getMediaDir
 from libavg.ui import button
 
@@ -596,12 +596,12 @@ class EndState:
     def onStartClick(self, event):
         self.game.switchState(self.game.playingState)
 
-class Game(AVGApp):
+class SponcApp(gameapp.GameApp):
     multitouch = True
 
     def __init__(self, parentNode):
         avg.WordsNode.addFontDir(getMediaDir(__file__, 'fonts'))
-        super(Game, self).__init__(parentNode)
+        super(SponcApp, self).__init__(parentNode)
 
     def init(self):
         global g_AudioInterface
@@ -824,5 +824,5 @@ class Game(AVGApp):
                 parent=self.node)
 
 if __name__ == '__main__':
-    Game.start(resolution = config.resolution)
+    SponcApp.start(resolution = config.resolution)
 
