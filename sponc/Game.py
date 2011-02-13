@@ -622,9 +622,11 @@ class SponcApp(gameapp.GameApp):
         dotLine1x = self._parentNode.width * 1 / 3
         dotLine2x = self._parentNode.width * 2 / 3
 
-        titleSize = Point2D(725, 128) * self._parentNode.width/1280
-        titlePos = Point2D(self._parentNode.width/2 - titleSize.x/2, config.SPACING.y)
-        fontSize = 80
+        sizeRatio = self._parentNode.width/1280
+        titleSize = Point2D(725, 128) * sizeRatio
+        titlePos = Point2D(self._parentNode.width/2 - titleSize.x/2, 
+                config.SPACING.y*3*sizeRatio)
+        fontSize = 60 * sizeRatio
         self.mainNode = g_player.createNode(
         """
         <div mediadir="%(mediadir)s">
@@ -664,14 +666,19 @@ class SponcApp(gameapp.GameApp):
                 <image width="%(width)u" height="%(height)u" href="black.png" 
                         opacity="0.8" />
                 <image href="title.png" size="%(titleSize)s" pos="%(titlePos)s" />
-                <words x="%(mid_x)u" y="%(text_y)u" width="%(playerWidth)u" 
+                <words x="%(mid_x)u" y="%(infotext_y)u" width="%(width)u" 
                         alignment="center" fontsize="%(fontsize_info)u" color="f0ead8">
-                            <b>credits:</b><br />
-                            Martin Heistermann<br />
-                            Tim Grocki<br />
-                            Archimedes GmbH<br />
-                            <br />
-                            <b>source code:</b><br />
+                            <b>Written by:</b><br/>
+                            Martin Heistermann<br/>
+                            Tim Grocki<br/><br/>
+                            <b>Support:</b><br/>
+                            Archimedes GmbH<br/>
+                            http://www.archimedes-exhibitions.de<br/>
+                            <br/>
+                            <b>Based on libavg:</b><br/>
+                            http://www.libavg.de<br/>
+                            <br/>
+                            <b>Source code:</b><br/>
                             http://sponc.de
                 </words>
             </div>
@@ -697,6 +704,7 @@ class SponcApp(gameapp.GameApp):
             'fontsize_info': fontSize/2,
             'titleSize': titleSize,
             'titlePos': titlePos,
+            'infotext_y': self._parentNode.height/3,
             })
         self._parentNode.insertChild(self.mainNode, 0)
         self.node = g_player.getElementByID("cage")
