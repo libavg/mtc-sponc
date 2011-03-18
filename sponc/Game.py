@@ -626,7 +626,7 @@ class SponcApp(gameapp.GameApp):
         titleSize = Point2D(725, 128) * sizeRatio
         titlePos = Point2D(self._parentNode.width/2 - titleSize.x/2, 
                 config.SPACING.y*3*sizeRatio)
-        fontSize = 60 * sizeRatio
+        fontSize = 90 * sizeRatio
         self.mainNode = g_player.createNode(
         """
         <div mediadir="%(mediadir)s">
@@ -643,21 +643,21 @@ class SponcApp(gameapp.GameApp):
                 <image x="%(vertline2x)u" href="third_line.png" height="%(cageHeight)u"/>
                 <div id="textfield" x="0" y="%(text_y)u" opacity="0">
                     <words x="%(mid_x)u" y="0" width="%(fontsize)u" alignment="center"
-                            text=":" font="DS-Digital" fontsize="%(fontsize)u" 
+                            text=":" font="%(font)s" fontsize="%(fontsize)u" 
                             color="f0ead8"/>
                     <words id="leftplayerscore" x="%(score_left_x)u" width="180" 
-                            alignment="right" text="00" font="DS-Digital" 
+                            alignment="right" text="00" font="%(font)s" 
                             fontsize="%(fontsize)u" color="f0ead8"/>
                     <words id="rightplayerscore" x="%(score_right_x)u" width="180"
-                            alignment="left" text="00" font="DS-Digital" 
+                            alignment="left" text="00" font="%(font)s" 
                             fontsize="%(fontsize)u" color="f0ead8"/>
                     <div id="winner" opacity="0">
                         <words id="winner_left" x="%(winnerLeft_x)u"
-                                width="%(playerWidth)u" alignment="center" text="Winner"
-                                font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                                width="%(playerWidth)u" alignment="center" text="WINNER"
+                                font="%(font)s" fontsize="%(fontsize)u" color="f0ead8"/>
                         <words id="winner_right" x="%(winnerRight_x)u"
-                                width="%(playerWidth)u" alignment="center" text="Winner"
-                                font="DS-Digital" fontsize="%(fontsize)u" color="f0ead8"/>
+                                width="%(playerWidth)u" alignment="center" text="WINNER"
+                                font="%(font)s" fontsize="%(fontsize)u" color="f0ead8"/>
                     </div>
                 </div>
             </div>
@@ -701,10 +701,11 @@ class SponcApp(gameapp.GameApp):
             'score_left_x': self._parentNode.width/2 - fontSize/4,
             'score_right_x': self._parentNode.width/2 + fontSize/4,
             'fontsize': fontSize,
-            'fontsize_info': fontSize/2,
+            'fontsize_info': fontSize/3,
             'titleSize': titleSize,
             'titlePos': titlePos,
             'infotext_y': self._parentNode.height/3,
+            'font': 'Unsteady Oversteer',
             })
         self._parentNode.insertChild(self.mainNode, 0)
         self.node = g_player.getElementByID("cage")
