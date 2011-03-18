@@ -705,7 +705,7 @@ class SponcApp(gameapp.GameApp):
             'titleSize': titleSize,
             'titlePos': titlePos,
             'infotext_y': self._parentNode.height/3,
-            'font': 'Homespun TT BRK',
+            'font': 'Alarm Clock',
             })
         self._parentNode.insertChild(self.mainNode, 0)
         self.node = g_player.getElementByID("cage")
