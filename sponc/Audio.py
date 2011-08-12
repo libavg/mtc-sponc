@@ -27,7 +27,7 @@ try:
 except ImportError:
     g_AudioEnabled = False
 import os, time
-from libavg import AVGAppUtil
+from libavg import utils
 
 if g_AudioEnabled:
     class SponcPlayer(scsynth.Player):
@@ -80,7 +80,7 @@ class AudioInterface:
             print "AUDIO: Audio subsystem not available"
             return
         
-        self.__soundDir = os.path.join(AVGAppUtil.getMediaDir(__file__), 'Sound')
+        self.__soundDir = os.path.join(utils.getMediaDir(__file__), 'Sound')
 
 
         self.__server = scsynth.connect()

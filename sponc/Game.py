@@ -27,7 +27,7 @@ import math
 from random import random, seed
 
 from libavg import avg, gameapp, Point2D, AVGApp
-from libavg.AVGAppUtil import getMediaDir
+from libavg.utils import getMediaDir
 from libavg.ui import button
 
 from util import in_between, boundary, delNode

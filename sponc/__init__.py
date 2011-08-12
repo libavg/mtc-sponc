@@ -20,7 +20,7 @@
 
 import os
 
-from libavg.AVGAppUtil import getMediaDir, createImagePreviewNode
+from libavg.utils import getMediaDir, createImagePreviewNode
 from Game import SponcApp
 
 __all__ = ['apps']
