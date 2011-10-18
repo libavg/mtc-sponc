@@ -225,13 +225,13 @@ class BatLine(Line):
         p1 = self.ends[0]
         p2 = self.ends[1]
 
-        self.node.height = self.getLength() - self.ends[0].node.height + 15
+        self.node.height = math.fabs(self.getLength() - self.ends[0].node.height + 15)
         # ^ assume both ends have the same diameter
         # we want a line from the edges of the batpoints, not from the middles
 
         width = self.getWidth()
 
-        self.node.width = width
+        self.node.width = math.fabs(width)
 
         if self.isHard():
             self.node.opacity = 1
