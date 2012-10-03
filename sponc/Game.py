@@ -509,10 +509,13 @@ def winkelabstand(a, b):
 
 class Button(button.Button):
 
-    def __init__(self, upImage, downImage, **kwargs):
+    def __init__(self, upImage, downImage, clickHandler=None, **kwargs):
         upNode = avg.ImageNode(href=upImage)
         downNode = avg.ImageNode(href=downImage)
         button.Button.__init__(self, upNode=upNode, downNode=downNode, **kwargs)
+        if clickHandler:
+            self.subscribe(self.CLICKED, clickHandler)
+
         avg.fadeIn(self, config.STATE_FADE_TIME)
 
 
@@ -832,21 +835,21 @@ class SponcApp(gameapp.GameApp):
                 pos=(xPos, screenSize.y/5),
                 upImage="start_button_normal.png",
                 downImage="start_button_pressed.png",
-                clickHandler=lambda e: self.switchState(self.playingState),
+                clickHandler=lambda: self.switchState(self.playingState),
                 parent=self.node)
                 
         self.infoButton = Button(
                 pos=(xPos, screenSize.y-4*buttonSize.y),
                 upImage="info_button_normal.png",
                 downImage="info_button_pressed.png",
-                clickHandler=lambda e: self.switchState(self.infoState),
+                clickHandler=lambda: self.switchState(self.infoState),
                 parent=self.node)
 
         self.exitButton = Button(
                 pos=(xPos, screenSize.y-3*buttonSize.y),
                 upImage="exit_button_normal.png",
                 downImage="exit_button_pressed.png",
-                clickHandler=lambda e: self.quit(),
+                clickHandler=lambda: self.quit(),
                 parent=self.node)
 
 if __name__ == '__main__':
