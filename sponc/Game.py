@@ -20,17 +20,15 @@
 
 
 
-import sys
 import os
-import time
 import math
 from random import random, seed
 
-from libavg import avg, gameapp, Point2D, AVGApp
+from libavg import avg, gameapp, Point2D
 from libavg.utils import getMediaDir
 from libavg.ui import button
 
-from util import in_between, boundary, delNode
+from util import delNode
 from Geometry import Box, Line, Triangle
 import Audio
 import config
@@ -43,30 +41,29 @@ def screenPosToSoundPos(screenPos):
             (screenPos.y / config.resolution.y) * 2 - 1.0)
 
 
-class Clash(Point2D):
+class Clash(avg.ImageNode):
     """clash explosion"""
 
-    def __init__(self, game, pos):
-        Point2D.__init__(self, pos)
-        self.__node=g_player.createNode('image', {
-            'href': 'clash.png',
-            })
-        self.__node.pos = pos
-        game.addNode(self.__node)
-        self.step=0
-        self.__onFrameHandler = g_player.setOnFrameHandler(self.__animate)
+    def __init__(self, game, pos, **kwargs):
+        super(Clash, self).__init__(href="clash.png", **kwargs)
+        self.registerInstance(self, None)
+        game.addNode(self)
+        self.center = pos
+
+        self.step = 0
+        self.__onFrameHandler = g_player.subscribe(g_player.ON_FRAME, self.__animate)
 
     def __animate(self):
-        self.__node.width = 80*math.log(self.step*10+2)
-        self.__node.height = self.__node.width
-        self.__node.pos = self - self.__node.size / 2
+        self.width = 80*math.log(self.step*10+2)
+        self.height = self.width
+        self.pos = self.center - self.size / 2
         self.step += 1
         if self.step > 3:
             self.__stop()
 
     def __stop(self):
-        g_player.clearInterval(self.__onFrameHandler)
-        delNode(self.__node)
+        g_player.unsubscribe(g_player.ON_FRAME, self.__onFrameHandler)
+        self.unlink(True)
 
 
 class SideLine(Line):
@@ -134,9 +131,8 @@ class Batpoint(Point2D):
 
     def onCursorDown(self, event):
         self.__cursorID = event.cursorid
-        self.node.setEventHandler(avg.CURSORMOTION, avg.TOUCH|avg.MOUSE,
-                self.onCursorMotion)
-        self.node.setEventHandler(avg.CURSORUP, avg.TOUCH|avg.MOUSE, self.onCursorUp)
+        self.node.subscribe(avg.Node.CURSOR_MOTION, self.onCursorMotion)
+        self.node.subscribe(avg.Node.CURSOR_UP, self.onCursorUp)
         self.node.setEventCapture(event.cursorid)
         self.goto(event.pos-config.SPACING)
         self.player.changeSound()
@@ -251,7 +247,7 @@ class BatLine(Line):
     
     def onClash(self, object, position):
         if self.isHard():
-            Clash(self.game, position)
+            Clash(self.game, pos=position)
             object.hitSpeedup(self.getLength()/config.MAX_BAT_LENGTH)
             
             self.__playSound(position)
@@ -292,7 +288,7 @@ class BatLine(Line):
                     ball.goto(newpos.x,newpos.y)
                 else:
                     print "warning: no newpos!"
-                Clash(self.game, ball)
+                Clash(self.game, pos=ball)
                 ball.hitSpeedup(self.getLength()/(config.MAX_BAT_LENGTH*2))
                 ball.update()
 
@@ -567,10 +563,12 @@ class PlayingState:
         self.ball = Ball(self.node.width/2,self.node.height/2,self.game)
         self.__toUpdate.append(self.ball)
         self.__onFrameHandler = g_player.setOnFrameHandler(self.onFrame)
+#        self.__onFrameHandler = g_player.subscribe(g_player.ON_FRAME, self.onFrame)
     def leave(self):
         self.ball.stop()
         self.ball = None
         g_player.clearInterval(self.__onFrameHandler)
+#        g_player.unsubscribe(g_player.ON_FRAME, self.__onFrameHandler)
     def onFrame(self):
         for x in self.__toUpdate:
             x.update()
@@ -740,7 +738,7 @@ class SponcApp(gameapp.GameApp):
                 Point2D(cageWidth,cageHeight+10), playerright)
         self._surfaces.append(rightbound)
 
-        self.node.setEventHandler(avg.CURSORDOWN, avg.TOUCH|avg.MOUSE, self.onCursorDown)
+        self.node.subscribe(avg.Node.CURSOR_DOWN, self.onCursorDown)
 
         self.__states = []
         self.idleState = IdleState(self)
