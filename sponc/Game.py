@@ -52,6 +52,7 @@ class Clash(avg.ImageNode):
 
         self.step = 0
         self.__onFrameHandler = g_player.subscribe(g_player.ON_FRAME, self.__animate)
+        self.__animate()
 
     def __animate(self):
         self.width = 80*math.log(self.step*10+2)
