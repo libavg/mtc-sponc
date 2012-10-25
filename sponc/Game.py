@@ -540,11 +540,11 @@ class InfoState:
         self.node.sensitive = True
         avg.fadeIn(self.node, config.STATE_FADE_TIME)
         g_player.setTimeout(20000, self.__back)
-        self.node.connectEventHandler(avg.CURSORDOWN, avg.MOUSE | avg.TOUCH,
-                self, lambda event: self.__back())
+        self.eventID = self.node.subscribe(avg.Node.CURSOR_DOWN, 
+                lambda event: self.__back())
 
     def leave(self):
-        self.node.disconnectEventHandler(self)
+        self.node.unsubscribe(avg.Node.CURSOR_DOWN, self.eventID)
         avg.fadeOut(self.node, config.STATE_FADE_TIME)
         self.node.sensitive = False
 
@@ -562,13 +562,11 @@ class PlayingState:
         self.game.resetScores()
         self.ball = Ball(self.node.width/2,self.node.height/2,self.game)
         self.__toUpdate.append(self.ball)
-        self.__onFrameHandler = g_player.setOnFrameHandler(self.onFrame)
-#        self.__onFrameHandler = g_player.subscribe(g_player.ON_FRAME, self.onFrame)
+        self.__onFrameHandler = g_player.subscribe(g_player.ON_FRAME, self.onFrame)
     def leave(self):
         self.ball.stop()
         self.ball = None
-        g_player.clearInterval(self.__onFrameHandler)
-#        g_player.unsubscribe(g_player.ON_FRAME, self.__onFrameHandler)
+        g_player.unsubscribe(g_player.ON_FRAME, self.__onFrameHandler)
     def onFrame(self):
         for x in self.__toUpdate:
             x.update()
