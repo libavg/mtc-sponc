@@ -28,7 +28,6 @@ from libavg import avg, gameapp, Point2D
 from libavg.utils import getMediaDir
 from libavg.ui import button
 
-from util import delNode
 from Geometry import Box, Line, Triangle
 import Audio
 import config
@@ -398,7 +397,7 @@ class Ball(Point2D):
         return balldiv
 
     def stop(self):
-        delNode(self.node)
+        self.node.unlink(True)
 
     def reset(self):
         self.direction = random()*2.0-1 # from -1.0 to 1.0

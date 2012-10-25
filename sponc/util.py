@@ -31,8 +31,3 @@ def boundary(val,min,max):
         return max
     return val
 
-def delNode(node):
-    parent=node.getParent()
-    pos=parent.indexOf(node)
-    parent.removeChild(pos)
-
