@@ -24,7 +24,7 @@ import os
 import math
 from random import random, seed
 
-from libavg import avg, gameapp, Point2D
+from libavg import avg, gameapp, Point2D, apphelpers
 from libavg.utils import getMediaDir
 from libavg.ui import button
 
@@ -617,6 +617,7 @@ class SponcApp(gameapp.GameApp):
         cageWidth = self._parentNode.width - 2 * config.SPACING.x
         cageHeight = self._parentNode.height - 2 * config.SPACING.y
         playerWidth = cageWidth / 3.0
+        self.getStarter().setTouchVisualization(apphelpers.TouchVisualization)
         
         dotLine1x = self._parentNode.width * 1 / 3
         dotLine2x = self._parentNode.width * 2 / 3
