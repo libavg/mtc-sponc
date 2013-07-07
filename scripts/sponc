@@ -25,11 +25,7 @@ try:
 except ImportError:
     sys.path = ['..', '/usr/share/games'] + sys.path
 
-    try:
-        import sponc
-    except ImportError:
-        sys.stderr.write('ERROR: Cannot find sponc package: reinstall the game.\n')
-        sys.exit(1)
+    import sponc
 
 if __name__ == '__main__':
     sponc.SponcApp.start()

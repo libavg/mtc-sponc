@@ -26,7 +26,7 @@ from random import random, seed
 
 from libavg import avg, gameapp, Point2D, apphelpers
 from libavg.utils import getMediaDir
-from libavg.ui import button
+from libavg.widget import button
 
 from Geometry import Box, Line, Triangle
 import Audio
@@ -503,12 +503,10 @@ def winkelabstand(a, b):
     d *= sgn(a-b)
     return d
 
-class Button(button.Button):
+class Button(button.BmpButton):
 
     def __init__(self, upImage, downImage, clickHandler=None, **kwargs):
-        upNode = avg.ImageNode(href=upImage)
-        downNode = avg.ImageNode(href=downImage)
-        button.Button.__init__(self, upNode=upNode, downNode=downNode, **kwargs)
+        button.BmpButton.__init__(self, upSrc=upImage, downSrc=downImage, **kwargs)
         if clickHandler:
             self.subscribe(self.CLICKED, clickHandler)
 
