@@ -24,7 +24,7 @@ import os
 import math
 from random import random, seed
 
-from libavg import avg, gameapp, Point2D, apphelpers
+from libavg import avg, Point2D, apphelpers, app
 from libavg.utils import getMediaDir
 from libavg.widget import button
 
@@ -73,13 +73,13 @@ class SideLine(Line):
 
     def onClash(self, object, position):
         Line.onClash(self, object, position)
-        if isinstance(object, Ball): 
+        if isinstance(object, Ball):
             self.__playSound(position)
             return True
 
     def __playSound(self, position):
         global g_AudioInterface
-        
+
         spos = screenPosToSoundPos(position)
         g_AudioInterface.playSample('boundary', spos[0], spos[1])
 
@@ -104,7 +104,7 @@ class BoundaryLine(Line):
 
     def __playSound(self, position):
         global g_AudioInterface
-            
+
         spos = screenPosToSoundPos(position)
         g_AudioInterface.playSample('goal', spos[0], spos[1])
 
@@ -119,7 +119,7 @@ class Batpoint(Point2D):
     def __init__(self, player, pos):
         Point2D.__init__(self, pos)
         self.player = player
-        self.node = g_player.createNode('image', 
+        self.node = g_player.createNode('image',
                 {'href':'finger.png', 'size': config.BATPOINT_SIZE})
         avg.ContinuousAnim(self.node, "angle", 0, config.FINGER_ROT_SPEED, False).start()
         player.game.addNode(self.node)
@@ -179,7 +179,7 @@ class Batpoint(Point2D):
         """reposition batpoint: new position (x,y) marks the middle of the new
         batpoint"""
         new=self.inCage(pos)
-    
+
         if self.player.batline.isHard():
             self.moveBounce(new)
 
@@ -244,12 +244,12 @@ class BatLine(Line):
 
     def isHard(self):
         return self.getLength() <= config.MAX_BAT_LENGTH
-    
+
     def onClash(self, object, position):
         if self.isHard():
             Clash(self.game, pos=position)
             object.hitSpeedup(self.getLength()/config.MAX_BAT_LENGTH)
-            
+
             self.__playSound(position)
         Line.onClash(self, object ,position)
         return False
@@ -267,7 +267,7 @@ class BatLine(Line):
             (F,O) = (O,F)
         N = new
         T = Triangle(F, O, N)
-        if isinstance(self.game.curState, PlayingState): 
+        if isinstance(self.game.curState, PlayingState):
             ball = self.game.curState.ball
             if T.contains(ball):
                 self.__playSound(N)
@@ -310,7 +310,7 @@ class Player:
         self.cage = cage
         self.score = 0
         self.game = game
-        
+
         xpos = cage.x + cage.width/2
         self.addBatpoints(Point2D(xpos,cage.height*1/3), Point2D(xpos,cage.height*2/3))
         self.batline = BatLine("bat.png", self.ends, game)
@@ -413,11 +413,11 @@ class Ball(Point2D):
 
     def goto(self,x,y):
         if x < -100 or x > self.game.node.width + 100:
-            print ("BUG! ball out of horizontal bounds: %s, next %s, old next %s speed %f!" 
+            print ("BUG! ball out of horizontal bounds: %s, next %s, old next %s speed %f!"
                     % (self, Point2D(x,y), Point2D(self.nextx,self.nexty), self.speed))
             self.reset()
         if y < -100 or y > self.game.node.height + 100:
-            print ("BUG! ball out of vertical bounds: %s, next %s, old next %s speed %f!" 
+            print ("BUG! ball out of vertical bounds: %s, next %s, old next %s speed %f!"
                     % (self, Point2D(x,y), Point2D(self.nextx,self.nexty), self.speed))
             self.reset()
         self.x = x
@@ -439,14 +439,14 @@ class Ball(Point2D):
     def update(self):
         if g_player.getFrameTime() - self.sleepStartTime < config.TIME_BETWEEN_BALLS:
             return
-        
+
         #check if the ball collides with bats
         for line in self.game.getSurfaces():
             if self.trybounce(line):
 #               print "bouncing!"
                 return # a bounce might trigger a .reset(), we dont want to move
                        # directly after that, so return
-        
+
         #move ball
         self.gotoNext()
 
@@ -538,7 +538,7 @@ class InfoState:
         self.node.sensitive = True
         avg.fadeIn(self.node, config.STATE_FADE_TIME)
         g_player.setTimeout(20000, self.__back)
-        self.eventID = self.node.subscribe(avg.Node.CURSOR_DOWN, 
+        self.eventID = self.node.subscribe(avg.Node.CURSOR_DOWN,
                 lambda event: self.__back())
 
     def leave(self):
@@ -602,27 +602,22 @@ class EndState:
         self.game.switchState(self.game.playingState)
 
 
-class SponcApp(gameapp.GameApp):
-    multitouch = True
-
-    def __init__(self, parentNode):
-        avg.WordsNode.addFontDir(getMediaDir(__file__, 'fonts'))
-        super(SponcApp, self).__init__(parentNode)
-
-    def init(self):
+class SponcApp(app.MainDiv):
+    def onInit(self):
         global g_AudioInterface
 
-        cageWidth = self._parentNode.width - 2 * config.SPACING.x
-        cageHeight = self._parentNode.height - 2 * config.SPACING.y
-        playerWidth = cageWidth / 3.0
-        self.getStarter().setTouchVisualization(apphelpers.TouchVisualization)
-        
-        dotLine1x = self._parentNode.width * 1 / 3
-        dotLine2x = self._parentNode.width * 2 / 3
+        avg.WordsNode.addFontDir(getMediaDir(__file__, 'fonts'))
 
-        sizeRatio = self._parentNode.width/1280
+        cageWidth = self.width - 2 * config.SPACING.x
+        cageHeight = self.height - 2 * config.SPACING.y
+        playerWidth = cageWidth / 3.0
+
+        dotLine1x = self.width * 1 / 3
+        dotLine2x = self.width * 2 / 3
+
+        sizeRatio = self.width/1280
         titleSize = Point2D(725, 128) * sizeRatio
-        titlePos = Point2D(self._parentNode.width/2 - titleSize.x/2, 
+        titlePos = Point2D(self.width/2 - titleSize.x/2,
                 config.SPACING.y*3*sizeRatio)
         fontSize = 90 * sizeRatio
         self.mainNode = g_player.createNode(
@@ -635,19 +630,19 @@ class SponcApp(gameapp.GameApp):
                     href="background_texture.png" blendmode="add" opacity="0.1"/>
             <image href="border.png" y="%(cageY)u"
                     width="%(width)u" height="%(cageHeight)u" opacity="1"/>
-            <div id="cage" x="%(cageX)u" y="%(cageY)u" 
+            <div id="cage" x="%(cageX)u" y="%(cageY)u"
                     width="%(cageWidth)u" height="%(cageHeight)u">
                 <image x="%(vertline1x)u" href="third_line.png" height="%(cageHeight)u"/>
                 <image x="%(vertline2x)u" href="third_line.png" height="%(cageHeight)u"/>
                 <div id="textfield" x="0" y="%(text_y)u" opacity="0">
                     <words x="%(mid_x)u" y="0" width="%(fontsize)u" alignment="center"
-                            text=":" font="%(font)s" fontsize="%(fontsize)u" 
+                            text=":" font="%(font)s" fontsize="%(fontsize)u"
                             color="f0ead8"/>
-                    <words id="leftplayerscore" x="%(score_left_x)u" width="180" 
-                            alignment="right" text="00" font="%(font)s" 
+                    <words id="leftplayerscore" x="%(score_left_x)u" width="180"
+                            alignment="right" text="00" font="%(font)s"
                             fontsize="%(fontsize)u" color="f0ead8"/>
                     <words id="rightplayerscore" x="%(score_right_x)u" width="180"
-                            alignment="left" text="00" font="%(font)s" 
+                            alignment="left" text="00" font="%(font)s"
                             fontsize="%(fontsize)u" color="f0ead8"/>
                     <div id="winner" opacity="0">
                         <words id="winner_left" x="%(winnerLeft_x)u"
@@ -661,10 +656,10 @@ class SponcApp(gameapp.GameApp):
             </div>
             <div id="buttons"/>
             <div id="infoscreen" sensitive="False" opacity="0">
-                <image width="%(width)u" height="%(height)u" href="black.png" 
+                <image width="%(width)u" height="%(height)u" href="black.png"
                         opacity="0.8" />
                 <image href="title.png" size="%(titleSize)s" pos="%(titlePos)s" />
-                <words x="%(mid_x)u" y="%(infotext_y)u" width="%(width)u" 
+                <words x="%(mid_x)u" y="%(infotext_y)u" width="%(width)u"
                         alignment="center" fontsize="%(fontsize_info)u" color="f0ead8">
                             <b>Written by:</b><br/>
                             Martin Heistermann<br/>
@@ -683,8 +678,8 @@ class SponcApp(gameapp.GameApp):
         </div>
         """ % {
             'mediadir': getMediaDir(__file__),
-            'width': self._parentNode.width,
-            'height': self._parentNode.height,
+            'width': self.width,
+            'height': self.height,
             'cageX': config.SPACING.x,
             'cageY': config.SPACING.y,
             'cageWidth': cageWidth,
@@ -692,31 +687,31 @@ class SponcApp(gameapp.GameApp):
             'vertline1x': playerWidth,
             'vertline2x': cageWidth - playerWidth,
             'playerWidth': playerWidth,
-            'text_y': self._parentNode.height/4,
+            'text_y': self.height/4,
             'winnerLeft_x': playerWidth/2,
             'winnerRight_x': cageWidth - playerWidth/2,
-            'mid_x': self._parentNode.width/2,
-            'score_left_x': self._parentNode.width/2 - fontSize/4,
-            'score_right_x': self._parentNode.width/2 + fontSize/4,
+            'mid_x': self.width/2,
+            'score_left_x': self.width/2 - fontSize/4,
+            'score_right_x': self.width/2 + fontSize/4,
             'fontsize': fontSize,
             'fontsize_info': fontSize/3,
             'titleSize': titleSize,
             'titlePos': titlePos,
-            'infotext_y': self._parentNode.height/3,
+            'infotext_y': self.height/3,
             'font': 'Alarm Clock',
             })
-        self._parentNode.insertChild(self.mainNode, 0)
+        self.insertChild(self.mainNode, 0)
         self.node = g_player.getElementByID("cage")
         seed()
         self._surfaces=[]
-        
+
         # Check if quadraphonic system is available
         if os.getenv("MTT_DEPLOY"):
             quadra = True
         else:
             quadra = False
         g_AudioInterface = Audio.AudioInterface(quadra)
-    
+
 
         playerleft = Player(Box(0,0,playerWidth,cageHeight), self)
         playerright = Player(Box(cageWidth-playerWidth,0,playerWidth,cageHeight), self)
@@ -724,7 +719,7 @@ class SponcApp(gameapp.GameApp):
 
         topline = SideLine(Point2D(-10,0), Point2D(cageWidth+10,0))
         self._surfaces.append(topline)
-        
+
         bottomline = SideLine(Point2D(-10,cageHeight), Point2D(cageWidth+10,cageHeight))
         self._surfaces.append(bottomline)
 
@@ -746,19 +741,22 @@ class SponcApp(gameapp.GameApp):
         self.__states.append(self.endState)
         self.infoState = InfoState(self)
         self.__states.append(self.infoState)
-        
+
         self.__createButtons()
 
         self.curState = None
         self.switchState(self.idleState)
         self.hideMainNodeTimeout = None
 
+        self.touchVisOverlay = app.touchvisualization.TouchVisualizationOverlay(isDebug=False,
+                visClass=app.touchvisualization.TouchVisualization, parent=self)
+
     def _enter(self):
         avg.fadeIn(self.mainNode, 400, 1.0)
         if self.hideMainNodeTimeout:
             g_player.clearInterval(self.hideMainNodeTimeout)
 
-    def _leave(self): 
+    def _leave(self):
         # TODO: should _really_ exit upon exit click, or remove exit button - AVGApp
         for player in self._players:
             player.release()
@@ -820,10 +818,10 @@ class SponcApp(gameapp.GameApp):
         self.exitButton.active = show
 
     def __createButtons(self):
-        screenSize = self._parentNode.size
+        screenSize = self.size
         buttonSize = Point2D(210, 80)
-#        if self._parentNode.width < 1280:
-#            buttonSize *= self._parentNode.width/1280
+#        if self.width < 1280:
+#            buttonSize *= self.width/1280
         xPos = (screenSize.x-buttonSize.x)/2
 
         self.startButton = Button(
@@ -844,9 +842,9 @@ class SponcApp(gameapp.GameApp):
                 pos=(xPos, screenSize.y-3*buttonSize.y),
                 upImage="exit_button_normal.png",
                 downImage="exit_button_pressed.png",
-                clickHandler=lambda: self.quit(),
+                clickHandler=g_player.stop,
                 parent=self.node)
 
 if __name__ == '__main__':
-    SponcApp.start(resolution = config.resolution)
+    app.App().run(SponcApp())
 
