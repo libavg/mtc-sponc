@@ -751,6 +751,8 @@ class SponcApp(app.MainDiv):
         self.touchVisOverlay = app.touchvisualization.TouchVisualizationOverlay(isDebug=False,
                 visClass=app.touchvisualization.TouchVisualization, parent=self)
 
+        self.__setupMultitouch()
+
     def switchState(self, newState):
         if self.curState != None:
             self.curState.leave()
@@ -834,6 +836,26 @@ class SponcApp(app.MainDiv):
                 downImage="exit_button_pressed.png",
                 clickHandler=g_player.stop,
                 parent=self.node)
+
+    def __setupMultitouch(self):
+        if app.instance.settings.getBoolean('multitouch_enabled'):
+            return
+
+        import platform
+
+        if platform.system() == 'Linux':
+            os.putenv('AVG_MULTITOUCH_DRIVER', 'XINPUT')
+        elif platform.system() == 'Windows':
+            os.putenv('AVG_MULTITOUCH_DRIVER', 'WIN7TOUCH')
+        else:
+            os.putenv('AVG_MULTITOUCH_DRIVER', 'TUIO')
+
+        try:
+            g_player.enableMultitouch()
+        except Exception, e:
+            os.putenv('AVG_MULTITOUCH_DRIVER', 'TUIO')
+            g_player.enableMultitouch()
+
 
 if __name__ == '__main__':
     app.App().run(SponcApp())
