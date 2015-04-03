@@ -751,16 +751,6 @@ class SponcApp(app.MainDiv):
         self.touchVisOverlay = app.touchvisualization.TouchVisualizationOverlay(isDebug=False,
                 visClass=app.touchvisualization.TouchVisualization, parent=self)
 
-    def _enter(self):
-        avg.fadeIn(self.mainNode, 400, 1.0)
-        if self.hideMainNodeTimeout:
-            g_player.clearInterval(self.hideMainNodeTimeout)
-
-    def _leave(self):
-        # TODO: should _really_ exit upon exit click, or remove exit button - AVGApp
-        for player in self._players:
-            player.release()
-
     def switchState(self, newState):
         if self.curState != None:
             self.curState.leave()
